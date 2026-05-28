@@ -1,6 +1,6 @@
 public interface IBotState
 {
-    void Enter();
-    void Update();
-    void Exit();
+    void EnterState(BotController bot);
+    void UpdateState(BotController bot);
+    void ExitState(BotController bot);
 }

@@ -1,0 +1,1 @@
+public enum GameState { AssigningRoles, HidingPhase, Playing, GameEnd }

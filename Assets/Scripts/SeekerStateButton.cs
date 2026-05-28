@@ -10,7 +10,7 @@ public class SeekerStateButton : MonoBehaviour, IPointerDownHandler
     {
         if (controller != null)
         {
-            controller.TransitionToState(controller.playerSeekerState);
+            controller.GetComponent<RoleComponent>().SetRole(GameRole.Seeker);
         }
 
     }

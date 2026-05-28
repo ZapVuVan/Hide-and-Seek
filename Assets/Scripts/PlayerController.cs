@@ -1,58 +1,59 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿// PlayerController.cs
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IRole
 {
-    private IPlayerState currentState;
-    public PlayerHiderState playerHiderState = new PlayerHiderState();
-    public PlayerSeekerState playerSeekerState = new PlayerSeekerState();
-    public PlayerNormalState playerNormalState = new PlayerNormalState();
     [HideInInspector] public PlayerMovement movement;
-
 
     public GameObject hiderCamera;
     public GameObject seekerCamera;
-
     public GameObject hiderControlUI;
     public GameObject seekerControlUI;
+
+    private IPlayerState currentState;
+    public PlayerNormalState normalState = new PlayerNormalState();
+    public PlayerHiderState hiderState = new PlayerHiderState();
+    public PlayerSeekerState seekerState = new PlayerSeekerState();
 
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
-
     }
 
     private void Start()
     {
-        TransitionToState(playerNormalState);
+        GetComponent<RoleComponent>().SetRole(GameRole.None);
+        TransitionToState(normalState);
     }
 
     private void Update()
     {
-        if (currentState != null)
-        {
-            currentState.UpdateState(this);
-        }
+        currentState?.UpdateState(this);
     }
 
     public void TransitionToState(IPlayerState newState)
     {
-        if (currentState != null)
-        {
-            currentState.ExitState(this);
-        }
-
+        currentState?.ExitState(this);
         currentState = newState;
-        currentState.EnterState(this);
+        currentState?.EnterState(this);
     }
 
     public IPlayerState GetCurrentState() => currentState;
+    public bool IsFirstPerson() => currentState == seekerState;
 
-    public bool IsFirstPerson()
+    public void OnRoleChanged(GameRole role)
     {
-        return currentState == playerSeekerState;
+        switch (role)
+        {
+            case GameRole.Hider:
+                TransitionToState(hiderState);
+                break;
+            case GameRole.Seeker:
+                TransitionToState(seekerState);
+                break;
+            default:
+                TransitionToState(normalState);
+                break;
+        }
     }
-
-
 }

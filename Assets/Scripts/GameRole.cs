@@ -1,0 +1,1 @@
+public enum GameRole { None, Hider, Seeker }

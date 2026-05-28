@@ -6,13 +6,17 @@ public class PlayerSeekerState : IPlayerState
 {
     public void EnterState(PlayerController player)
     {
-        player.seekerCamera.SetActive(true);
+        Debug.Log("EnterState Seeker");
+        player.seekerCamera.gameObject.SetActive(true);
         player.seekerControlUI.SetActive(true);
+        player.GetComponent<InvisibleController>()?.ResetInvisible();
+        var outline = player.GetComponent<Outline>();
+        if (outline != null) outline.enabled = false;
     }
 
     public void ExitState(PlayerController player)
     {
-        player.seekerCamera.SetActive(false);
+        player.seekerCamera.gameObject.SetActive(false);
         player.seekerControlUI.SetActive(false);
     }
 

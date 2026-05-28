@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-
+using System.Collections;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
@@ -92,6 +92,8 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
     }
 
+    
+
     private void ResetJump() => readyToJump = true;
     public float GetSpeed() => new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude;
 
@@ -109,5 +111,17 @@ public class PlayerMovement : MonoBehaviour
     {
         if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
             grounded = false;
+    }
+
+    public void ApplySpeedBoost(float amount, float duration)
+    {
+        StartCoroutine(SpeedBoostCoroutine(amount, duration));
+    }
+
+    private IEnumerator SpeedBoostCoroutine(float amount, float duration)
+    {
+        moveSpeed += amount;
+        yield return new WaitForSeconds(duration);
+        moveSpeed -= amount;
     }
 }

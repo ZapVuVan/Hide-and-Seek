@@ -8,7 +8,7 @@ public class HiderStateButton : MonoBehaviour, IPointerDownHandler
     [SerializeField] PlayerController controller;
     public void OnPointerDown(PointerEventData eventData)
     {
-        controller.TransitionToState(controller.playerHiderState);
+        controller.GetComponent<RoleComponent>().SetRole(GameRole.Hider);
     }
 
 }

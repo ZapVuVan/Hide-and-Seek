@@ -45,7 +45,6 @@ public class TouchCameraController : MonoBehaviour, IDragHandler
     // ================= FPS =================
     private void HandleFirstPerson(float mouseX, float mouseY)
     {
-        // ----- YAW -----
         rotY += mouseX;
 
         // FPS xoay player thật
