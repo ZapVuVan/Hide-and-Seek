@@ -1,4 +1,5 @@
 ﻿// GameManager.cs
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,24 +13,35 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<BotController> bots;
     [SerializeField] private RoleUI roleUI;
     [SerializeField] private HidingPhaseUI hidingPhaseUI;
+    [SerializeField] private TimePlayGameUI timePlayGameUI;
+    [SerializeField] private GameWinUI gameWinUI;
 
     [Header("Config")]
     [SerializeField] private float roleAssignDelay = 3f;
     [SerializeField] private float hidingPhaseDuration = 15f;
+    [SerializeField] private float playingDuration = 90f;
 
     private GameState currentState;
+    public GameState CurrentState => currentState;
+
+    private Coroutine playingTimerCoroutine;
 
     private void Awake() => Instance = this;
 
     private void Start()
     {
+        RoleManager.Instance.OnRolesChanged += CheckGameEnd;
         TransitionToState(GameState.AssigningRoles);
+    }
+
+    private void OnDestroy()
+    {
+        RoleManager.Instance.OnRolesChanged -= CheckGameEnd;
     }
 
     public void TransitionToState(GameState newState)
     {
         currentState = newState;
-
         switch (newState)
         {
             case GameState.AssigningRoles:
@@ -56,7 +68,7 @@ public class GameManager : MonoBehaviour
         foreach (var bot in bots)
             allCharacters.Add(bot.gameObject);
 
-        int seekerIndex = Random.Range(0, allCharacters.Count);
+        int seekerIndex = UnityEngine.Random.Range(0, allCharacters.Count);
         for (int i = 0; i < allCharacters.Count; i++)
         {
             GameRole role = i == seekerIndex ? GameRole.Seeker : GameRole.Hider;
@@ -70,15 +82,11 @@ public class GameManager : MonoBehaviour
     private IEnumerator HidingPhaseCoroutine()
     {
         bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
-
-        // Khóa Seeker
         LockSeekers(true);
 
-        // Nếu player là Seeker thì hiện UI che mắt
         if (playerIsSeeker)
             hidingPhaseUI.Show();
 
-        // Đếm ngược
         float timeLeft = hidingPhaseDuration;
         while (timeLeft > 0)
         {
@@ -87,20 +95,30 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
-        // Hết thời gian
         LockSeekers(false);
         hidingPhaseUI.Hide();
-
         TransitionToState(GameState.Playing);
+    }
+
+    private IEnumerator PlayingTimerCoroutine()
+    {
+        float timeLeft = playingDuration;
+        timePlayGameUI.Show();
+        while (timeLeft > 0)
+        {
+            timeLeft -= Time.deltaTime;
+            timePlayGameUI.UpdateTimer(timeLeft);
+            yield return null;
+        }
+        timePlayGameUI.Hide();
+        TransitionToState(GameState.GameEnd);
     }
 
     private void LockSeekers(bool locked)
     {
-        // Lock player nếu là Seeker
         if (player.GetComponent<RoleComponent>().Role == GameRole.Seeker)
             player.movement.enabled = !locked;
 
-        // Lock bot Seeker
         foreach (var bot in bots)
         {
             if (bot.GetComponent<RoleComponent>().Role == GameRole.Seeker)
@@ -110,22 +128,30 @@ public class GameManager : MonoBehaviour
 
     private void OnPlaying()
     {
-        roleUI.Refresh();
+        roleUI.Show();
+        playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
         Debug.Log("Game bắt đầu!");
     }
 
     private void OnGameEnd()
     {
-        Debug.Log("Game kết thúc!");
+        if (playingTimerCoroutine != null)
+        {
+            StopCoroutine(playingTimerCoroutine);
+            playingTimerCoroutine = null;
+        }
+        timePlayGameUI.Hide();
+        gameWinUI.Show();
     }
 
     public void CheckGameEnd()
     {
+        if (currentState != GameState.Playing) return;
+
         int hiderCount = RoleManager.Instance.CountByRole(GameRole.Hider);
+        Debug.Log($"CheckGameEnd | hiderCount: {hiderCount} | state: {currentState}");
+
         if (hiderCount <= 0)
-        {
-            Debug.Log("Seeker thắng!");
             TransitionToState(GameState.GameEnd);
-        }
     }
 }

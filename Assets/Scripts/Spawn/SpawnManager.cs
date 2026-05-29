@@ -27,11 +27,8 @@ public class SpawnManager : MonoBehaviour
         obj.SetActive(false);
         yield return new WaitForSeconds(delay);
 
-        Vector3 spawnPos = GetRandomSpawnPoint();
-        obj.transform.position = spawnPos;
+        obj.transform.position = GetRandomSpawnPoint();
         obj.SetActive(true);
-
-        // Đổi sang Seeker
         obj.GetComponent<RoleComponent>()?.SetRole(GameRole.Seeker);
     }
 }

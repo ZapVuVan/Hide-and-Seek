@@ -6,15 +6,26 @@ public class HealthBarUI : MonoBehaviour
 {
     [SerializeField] private Image fillImage;
 
+    private Health health;
+
     private void Start()
     {
-        var health = GetComponentInParent<Health>();
+        health = FindObjectOfType<PlayerController>().GetComponent<Health>();
         if (health != null)
+        {
+            fillImage.fillAmount = health.GetHealthPercent();
             health.OnHealthChanged += UpdateBar;
+        }
     }
 
-    private void UpdateBar(float current, float max)
+    private void OnDestroy()
     {
-        fillImage.fillAmount = current / max;
+        if (health != null)
+            health.OnHealthChanged -= UpdateBar;
+    }
+
+    private void UpdateBar(object sender, float percent)
+    {
+        fillImage.fillAmount = percent;
     }
 }

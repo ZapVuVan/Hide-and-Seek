@@ -60,7 +60,7 @@ public class BotHiderState : IBotState
 
         if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
         {
-            Debug.Log($"Di chuyển đến: {hit.position}");
+            Debug.Log($"Bot {bot.name} di chuyển đến vị trí ẩn: {hit.position}");
             bot.Agent.SetDestination(hit.position);
         }
         else

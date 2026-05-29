@@ -9,7 +9,9 @@ public class RoleComponent : MonoBehaviour
     {
         Role = role;
         RoleManager.Instance.Register(this);
+        RoleManager.Instance.NotifyRolesChanged();
         GetComponent<IRole>()?.OnRoleChanged(role);
+
     }
 
     private void OnDestroy()

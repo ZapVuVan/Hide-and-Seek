@@ -16,10 +16,12 @@ public class BotSeekerState : IBotState
 
     public void UpdateState(BotController bot)
     {
+
+        if (GameManager.Instance.CurrentState == GameState.HidingPhase) return;
         shootTimer += Time.deltaTime;
 
         Transform target = bot.FindNearestHider();
-
+      
         if (target == null)
         {
             if (!bot.Agent.pathPending && bot.Agent.remainingDistance <= bot.Agent.stoppingDistance)

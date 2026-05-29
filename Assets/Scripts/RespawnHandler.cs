@@ -1,6 +1,5 @@
 ﻿// RespawnHandler.cs
 using UnityEngine;
-using System.Collections;
 
 public class RespawnHandler : MonoBehaviour
 {
@@ -19,8 +18,6 @@ public class RespawnHandler : MonoBehaviour
     private void HandleDie()
     {
         if (roleComponent.Role != GameRole.Hider) return;
-
-        // Dùng SpawnManager chạy coroutine thay vì self
         SpawnManager.Instance.StartRespawn(gameObject, respawnDelay);
     }
 }
