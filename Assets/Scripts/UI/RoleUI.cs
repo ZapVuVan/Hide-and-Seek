@@ -1,7 +1,5 @@
-﻿// RoleUI.cs
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
-using System.Collections.Generic;
 
 public class RoleUI : MonoBehaviour
 {
@@ -14,31 +12,46 @@ public class RoleUI : MonoBehaviour
         Hide();
         RoleManager.Instance.OnRolesChanged += Refresh;
     }
+
+    // ✅ Luôn unsubscribe để tránh event gọi vào UI đã bị destroy
+    private void OnDestroy()
+    {
+        if (RoleManager.Instance != null)
+            RoleManager.Instance.OnRolesChanged -= Refresh;
+    }
+
     public void Show()
     {
+        // ✅ Guard null cho panel
+        if (panel == null) return;
         panel.SetActive(true);
     }
 
     public void Hide()
     {
+        if (panel == null) return;
         panel.SetActive(false);
     }
 
     public void Refresh()
     {
-        // Ghi tất cả Hider vào 1 text, mỗi người 1 dòng
+        // ✅ Guard: nếu UI này đã bị destroy thì bỏ qua
+        if (this == null || panel == null) return;
+
         var hiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
         string hiderNames = "";
         foreach (var hider in hiders)
-            hiderNames += hider.gameObject.name + "\n";
+            if (hider != null) // ✅ double-check từng item
+                hiderNames += hider.gameObject.name + "\n";
         hiderText.text = hiderNames;
 
-        // Ghi tất cả Seeker vào 1 text
         var seekers = RoleManager.Instance.GetAllByRole(GameRole.Seeker);
         string seekerNames = "";
         foreach (var seeker in seekers)
-            seekerNames += seeker.gameObject.name + "\n";
+            if (seeker != null)
+                seekerNames += seeker.gameObject.name + "\n";
         seekerText.text = seekerNames;
+
         Show();
     }
 }

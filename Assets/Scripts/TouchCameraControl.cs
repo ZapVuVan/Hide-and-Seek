@@ -4,16 +4,12 @@ using UnityEngine.EventSystems;
 public class TouchCameraController : MonoBehaviour, IDragHandler
 {
     [Header("References")]
-    [SerializeField] private PlayerController playerController;
-
-    [SerializeField] private Transform playerRoot;
     [SerializeField] private Transform orientation;
-
-    [SerializeField] private Transform cameraTarget;
+    [SerializeField] private GameObject headPlayer;
 
     [Header("Sensitivity")]
     [SerializeField] private float sensitivityX = 0.2f;
-    [SerializeField] private float sensitivityY = 0.2f;
+    [SerializeField] private float sensitivityY = 2f;
 
     [Header("Vertical Clamp")]
     [SerializeField] private float minY = -70f;
@@ -22,64 +18,46 @@ public class TouchCameraController : MonoBehaviour, IDragHandler
     private float rotX;
     private float rotY;
 
-    private void Start()
-    {
-        rotY = playerRoot.eulerAngles.y;
-    }
+    private bool isFirstCam = false;
 
     public void OnDrag(PointerEventData eventData)
     {
-        float mouseX = eventData.delta.x * sensitivityX;
-        float mouseY = eventData.delta.y * sensitivityY;
+        float mouseX =
+            (eventData.delta.x / Screen.width)
+            * sensitivityX * 100f;
 
-        if (playerController.IsFirstPerson())
-        {
-            HandleFirstPerson(mouseX, mouseY);
-        }
-        else
-        {
-            HandleThirdPerson(mouseX, mouseY);
-        }
-    }
+        float mouseY =
+            (eventData.delta.y / Screen.height)
+            * sensitivityY * 100f;
 
-    // ================= FPS =================
-    private void HandleFirstPerson(float mouseX, float mouseY)
-    {
         rotY += mouseX;
-
-        // FPS xoay player thật
-        playerRoot.rotation =
-            Quaternion.Euler(0f, rotY, 0f);
-
-        // Orientation follow player
-        orientation.rotation =
-            Quaternion.Euler(0f, rotY, 0f);
-
-        // ----- PITCH -----
         rotX -= mouseY;
+
         rotX = Mathf.Clamp(rotX, minY, maxY);
 
-        // Camera nhìn lên xuống
-        cameraTarget.localRotation =
-            Quaternion.Euler(rotX, 0f, 0f);
-    }
-
-    // ================= TPS =================
-    private void HandleThirdPerson(float mouseX, float mouseY)
-    {
-        rotY += mouseX;
-
-        rotX -= mouseY;
-        rotX = Mathf.Clamp(rotX, minY, maxY);
-
-        // TPS giữ kiểu cũ
         orientation.rotation =
             Quaternion.Euler(rotX, rotY, 0f);
     }
 
-    public void SetRotation(float x, float y)
+    public void TransitionToFirstPerson()
     {
-        rotX = x;
-        rotY = y;
+        isFirstCam = true;
+
+        if (headPlayer != null)
+            headPlayer.transform.localScale = Vector3.zero;
+
+        rotX = orientation.eulerAngles.x;
+        rotY = orientation.eulerAngles.y;
+    }
+
+    public void TransitionToThirdPerson()
+    {
+        isFirstCam = false;
+
+        if (headPlayer != null)
+            headPlayer.transform.localScale = Vector3.one;
+
+        rotX = orientation.eulerAngles.x;
+        rotY = orientation.eulerAngles.y;
     }
 }

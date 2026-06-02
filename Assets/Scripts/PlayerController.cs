@@ -4,11 +4,14 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour, IRole
 {
     [HideInInspector] public PlayerMovement movement;
+    [SerializeField] private TouchCameraController touchCameraController;
+    public GameObject headMeshRenderer;
 
     public GameObject hiderCamera;
     public GameObject seekerCamera;
     public GameObject hiderControlUI;
     public GameObject seekerControlUI;
+
 
     private IPlayerState currentState;
     public PlayerNormalState normalState = new PlayerNormalState();
@@ -18,6 +21,9 @@ public class PlayerController : MonoBehaviour, IRole
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
+        var killTable = FindObjectOfType<KillTable>();
+        if (killTable != null)
+            GetComponent<Health>().OnKilled += killTable.OnKilled;
     }
 
     private void Start()
@@ -36,9 +42,17 @@ public class PlayerController : MonoBehaviour, IRole
         currentState?.ExitState(this);
         currentState = newState;
         currentState?.EnterState(this);
-    }
 
-    public IPlayerState GetCurrentState() => currentState;
+        if (currentState == seekerState)
+        {
+            
+            touchCameraController.TransitionToFirstPerson();
+        }
+            
+        else
+            touchCameraController.TransitionToThirdPerson();
+
+    }
     public bool IsFirstPerson() => currentState == seekerState;
 
     public void OnRoleChanged(GameRole role)
@@ -56,4 +70,5 @@ public class PlayerController : MonoBehaviour, IRole
                 break;
         }
     }
+    public IPlayerState GetState() => currentState;
 }

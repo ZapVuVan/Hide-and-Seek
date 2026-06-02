@@ -1,8 +1,10 @@
 // PlayerHiderState.cs
 public class PlayerHiderState : IPlayerState
 {
+    private InvisibleController invisibleController;
     public void EnterState(PlayerController player)
     {
+        invisibleController = player.GetComponent<InvisibleController>();
         player.hiderControlUI.SetActive(true);
         player.seekerControlUI.SetActive(false);
         var outline = player.GetComponent<Outline>();
@@ -12,7 +14,7 @@ public class PlayerHiderState : IPlayerState
     public void UpdateState(PlayerController player)
     {
         float speed = player.movement.GetSpeed();
-        player.GetComponent<InvisibleController>()?.UpdateInvisible(speed);
+        invisibleController?.UpdateInvisible(speed);
     }
 
     public void ExitState(PlayerController player)

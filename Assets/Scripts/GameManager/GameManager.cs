@@ -1,5 +1,4 @@
-﻿// GameManager.cs
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,16 +14,30 @@ public class GameManager : MonoBehaviour
     [SerializeField] private HidingPhaseUI hidingPhaseUI;
     [SerializeField] private TimePlayGameUI timePlayGameUI;
     [SerializeField] private GameWinUI gameWinUI;
+    [SerializeField] private GameObject playerActionUI;
+    [SerializeField] private RoleRevealUI roleRevealUI;
+    [SerializeField] private TimeHiderUI timeHiderUI;
 
     [Header("Config")]
     [SerializeField] private float roleAssignDelay = 3f;
     [SerializeField] private float hidingPhaseDuration = 15f;
     [SerializeField] private float playingDuration = 90f;
 
+    [Header("Ping Config")]
+    [SerializeField] private float pingInterval = 15f;
+    [SerializeField] private float pingDuration = 5f;
+
     private GameState currentState;
     public GameState CurrentState => currentState;
 
     private Coroutine playingTimerCoroutine;
+    private Coroutine pingCoroutine;
+
+    // ================= EVENTS =================
+    public event Action<float> OnPingCooldownUpdate;
+    public event Action OnPingStart;
+    public event Action OnPingEnd;
+    public event Action<List<RoleComponent>> OnPingHiders;
 
     private void Awake() => Instance = this;
 
@@ -39,81 +52,159 @@ public class GameManager : MonoBehaviour
         RoleManager.Instance.OnRolesChanged -= CheckGameEnd;
     }
 
+    // ================= STATE =================
     public void TransitionToState(GameState newState)
     {
         currentState = newState;
+
         switch (newState)
         {
             case GameState.AssigningRoles:
                 StartCoroutine(AssigningRolesCoroutine());
                 break;
+
             case GameState.HidingPhase:
                 StartCoroutine(HidingPhaseCoroutine());
                 break;
+
             case GameState.Playing:
                 OnPlaying();
                 break;
+
             case GameState.GameEnd:
                 OnGameEnd();
                 break;
         }
     }
 
+    // ================= ROLE =================
     private IEnumerator AssigningRolesCoroutine()
     {
+        playerActionUI.SetActive(false);
+
         yield return new WaitForSeconds(roleAssignDelay);
 
         List<GameObject> allCharacters = new List<GameObject>();
         allCharacters.Add(player.gameObject);
+
         foreach (var bot in bots)
             allCharacters.Add(bot.gameObject);
 
         int seekerIndex = UnityEngine.Random.Range(0, allCharacters.Count);
+
+        GameRole playerRole = GameRole.Hider;
+
         for (int i = 0; i < allCharacters.Count; i++)
         {
-            GameRole role = i == seekerIndex ? GameRole.Seeker : GameRole.Hider;
+            GameRole role = (i == seekerIndex) ? GameRole.Seeker : GameRole.Hider;
             allCharacters[i].GetComponent<RoleComponent>()?.SetRole(role);
+
+            if (i == 0)
+                playerRole = role;
         }
 
-        yield return null;
+        if (roleRevealUI != null)
+            yield return StartCoroutine(roleRevealUI.PlayReveal(playerRole));
+
+        playerActionUI.SetActive(true);
         TransitionToState(GameState.HidingPhase);
     }
 
+    // ================= HIDING =================
     private IEnumerator HidingPhaseCoroutine()
     {
         bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
+
         LockSeekers(true);
 
         if (playerIsSeeker)
             hidingPhaseUI.Show();
+        else
+            timeHiderUI.Show();
 
         float timeLeft = hidingPhaseDuration;
+
         while (timeLeft > 0)
         {
             timeLeft -= Time.deltaTime;
-            hidingPhaseUI.UpdateTimer(timeLeft);
+
+            if (playerIsSeeker)
+                hidingPhaseUI.UpdateTimer(timeLeft);
+            else
+                timeHiderUI.UpdateTimer(timeLeft);
+
             yield return null;
         }
 
         LockSeekers(false);
+
         hidingPhaseUI.Hide();
+        timeHiderUI.Hide();
+
         TransitionToState(GameState.Playing);
     }
 
+    // ================= PLAYING =================
     private IEnumerator PlayingTimerCoroutine()
     {
         float timeLeft = playingDuration;
+
         timePlayGameUI.Show();
+
         while (timeLeft > 0)
         {
             timeLeft -= Time.deltaTime;
             timePlayGameUI.UpdateTimer(timeLeft);
             yield return null;
         }
+
         timePlayGameUI.Hide();
         TransitionToState(GameState.GameEnd);
     }
 
+    private void OnPlaying()
+    {
+        playerActionUI.SetActive(true);
+        roleUI.Show();
+
+        playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
+        pingCoroutine = StartCoroutine(PingUI());
+
+        Debug.Log("Game Start!");
+    }
+
+    // ================= PING SYSTEM =================
+    private IEnumerator PingUI()
+    {
+        while (true)
+        {
+            // cooldown 1 -> 0
+            float t = 0f;
+
+            while (t < pingInterval)
+            {
+                t += Time.deltaTime;
+                OnPingCooldownUpdate?.Invoke(1f - (t / pingInterval));
+                yield return null;
+            }
+
+            OnPingCooldownUpdate?.Invoke(0f);
+
+            // get hiders
+            List<RoleComponent> hiders =
+                RoleManager.Instance.GetAllByRole(GameRole.Hider);
+
+            OnPingStart?.Invoke();
+            OnPingHiders?.Invoke(hiders);
+
+            yield return new WaitForSeconds(pingDuration);
+
+            OnPingEnd?.Invoke();
+            OnPingCooldownUpdate?.Invoke(1f);
+        }
+    }
+
+    // ================= LOCK =================
     private void LockSeekers(bool locked)
     {
         if (player.GetComponent<RoleComponent>().Role == GameRole.Seeker)
@@ -126,20 +217,17 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnPlaying()
-    {
-        roleUI.Show();
-        playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
-        Debug.Log("Game bắt đầu!");
-    }
-
+    // ================= GAME END =================
     private void OnGameEnd()
     {
+        playerActionUI.SetActive(false);
+
         if (playingTimerCoroutine != null)
-        {
             StopCoroutine(playingTimerCoroutine);
-            playingTimerCoroutine = null;
-        }
+
+        if (pingCoroutine != null)
+            StopCoroutine(pingCoroutine);
+
         timePlayGameUI.Hide();
         gameWinUI.Show();
     }
@@ -149,7 +237,6 @@ public class GameManager : MonoBehaviour
         if (currentState != GameState.Playing) return;
 
         int hiderCount = RoleManager.Instance.CountByRole(GameRole.Hider);
-        Debug.Log($"CheckGameEnd | hiderCount: {hiderCount} | state: {currentState}");
 
         if (hiderCount <= 0)
             TransitionToState(GameState.GameEnd);

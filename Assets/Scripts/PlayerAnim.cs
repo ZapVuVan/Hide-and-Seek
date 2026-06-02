@@ -6,6 +6,8 @@ public class PlayerAnim : MonoBehaviour
 {
     private Animator anim;
     private PlayerMovement playerMovement;
+    private PlayerController playerController;
+    private RoleComponent role;
 
     private const int BASE_LAYER = 0;
     private const int GUN_LAYER = 1;
@@ -13,7 +15,8 @@ public class PlayerAnim : MonoBehaviour
     {
         anim = GetComponentInChildren<Animator>();
         playerMovement = GetComponent<PlayerMovement>();
-        //anim.SetLayerWeight(GUN_LAYER, 0f);
+        playerController = GetComponent<PlayerController>();
+        role = GetComponent<RoleComponent>();
 
     }
     private void Update()
@@ -28,6 +31,8 @@ public class PlayerAnim : MonoBehaviour
         }
 
         anim.SetBool("isJumping", playerMovement.IsJumping);
+
+        anim.SetBool("isSeeker", role.Role == GameRole.Seeker);
     }
 
     //public void SetGun(bool isGun)

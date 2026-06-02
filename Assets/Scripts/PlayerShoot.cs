@@ -1,5 +1,4 @@
-// PlayerShoot.cs
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerShoot : MonoBehaviour
 {
@@ -16,18 +15,32 @@ public class PlayerShoot : MonoBehaviour
 
     public void Shoot()
     {
+        // 1. Ray từ tâm màn hình
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Vector3 targetPoint = Physics.Raycast(ray, out RaycastHit hit)
-            ? hit.point
-            : ray.GetPoint(100f);
 
+        Vector3 targetPoint;
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            targetPoint = hit.point;
+        }
+        else
+        {
+            targetPoint = ray.GetPoint(100f);
+        }
+
+        // 2. Hướng bay từ đầu súng → target
+        Vector3 direction = (targetPoint - firePoint.position).normalized;
+
+        // 3. Spawn bullet
         GameObject obj = GameObjectPool.Instance.Get(
             bulletTag,
             firePoint.position,
-            Quaternion.identity
+            Quaternion.LookRotation(direction) // 👈 QUAN TRỌNG
         );
 
         if (obj != null && obj.TryGetComponent<Bullet>(out var bullet))
-            bullet.Init(bulletTag, targetPoint, roleComponent.Role);
+        {
+            bullet.Init(bulletTag, targetPoint, roleComponent.Role, gameObject);
+        }
     }
 }

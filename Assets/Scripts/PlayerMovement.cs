@@ -4,115 +4,117 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 5f;
-    [SerializeField] private float jumpCooldown = 0.5f;
-    [SerializeField] private float airMultiplier = 0.4f;
     [SerializeField] private float rotationSpeed = 10f;
 
-    [Header("Ground Check")]
-    [SerializeField] private float playerHeight = 2f;
-    [SerializeField] private LayerMask whatIsGround;
+    [Header("Jump & Gravity")]
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = -25f;
+    [SerializeField] private float maxFallSpeed = -35f;
 
+    [Header("References")]
     [SerializeField] private Transform orientation;
     [SerializeField] private Transform playerObj;
 
-    private Rigidbody rb;
-    private bool grounded;
-    private bool isJumping = false;
-    private bool readyToJump = true;
-    private Vector2 inputMove;
+    private CharacterController controller;
     private PlayerController playerController;
+
+    private Vector2 inputMove;
+    private float verticalVelocity;
+    private bool grounded;
+    private bool isJumping;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        controller = GetComponent<CharacterController>();
         playerController = GetComponent<PlayerController>();
     }
 
     private void Update()
     {
         inputMove = InputManager.instance.GetMoveInput();
+        grounded = controller.isGrounded;
 
-        if (grounded && isJumping)
-            isJumping = false;
-        if (InputManager.instance.GetJumpInput() && readyToJump && grounded && !isJumping)
+        HandleJump();
+        Move();
+        RotatePlayer();
+    }
+
+    private void HandleJump()
+    {
+        if (grounded && verticalVelocity < 0)
         {
-            readyToJump = false;
+            verticalVelocity = -2f;
+            isJumping = false;
+        }
+
+        if (InputManager.instance.GetJumpInput() && grounded)
+        {
             isJumping = true;
-            Jump();
-            Invoke(nameof(ResetJump), jumpCooldown);
+
+            verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
     }
 
-    private void FixedUpdate()
+    private void Move()
     {
-        Vector3 flatForward = new Vector3(orientation.forward.x, 0f, orientation.forward.z).normalized;
-        Vector3 flatRight = new Vector3(orientation.right.x, 0f, orientation.right.z).normalized;
-        Vector3 moveDir = flatForward * inputMove.y + flatRight * inputMove.x;
+        Vector3 flatForward =
+            new Vector3(orientation.forward.x, 0f, orientation.forward.z).normalized;
 
-        if (grounded)
+        Vector3 flatRight =
+            new Vector3(orientation.right.x, 0f, orientation.right.z).normalized;
+
+        Vector3 moveDir =
+            flatForward * inputMove.y +
+            flatRight * inputMove.x;
+
+        Vector3 horizontalVelocity = moveDir.normalized * moveSpeed;
+
+        // GRAVITY (mượt nhưng không float)
+        if (verticalVelocity < 0)
         {
-            rb.velocity = new Vector3(
-                moveDir.normalized.x * moveSpeed,
-                rb.velocity.y,
-                moveDir.normalized.z * moveSpeed
-            );
+            verticalVelocity += gravity * 1.8f * Time.deltaTime;
         }
         else
         {
-            rb.AddForce(moveDir.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
-
-            Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-            if (flatVel.magnitude > moveSpeed)
-            {
-                Vector3 limited = flatVel.normalized * moveSpeed;
-                rb.velocity = new Vector3(limited.x, rb.velocity.y, limited.z);
-            }
+            verticalVelocity += gravity * Time.deltaTime;
         }
+
+        verticalVelocity = Mathf.Max(verticalVelocity, maxFallSpeed);
+
+        Vector3 finalMove = horizontalVelocity;
+        finalMove.y = verticalVelocity;
+
+        controller.Move(finalMove * Time.deltaTime);
+    }
+
+    private void RotatePlayer()
+    {
+        Vector3 flatForward =
+            new Vector3(orientation.forward.x, 0f, orientation.forward.z).normalized;
+
+        Vector3 flatRight =
+            new Vector3(orientation.right.x, 0f, orientation.right.z).normalized;
+
+        Vector3 moveDir =
+            flatForward * inputMove.y +
+            flatRight * inputMove.x;
+
         if (playerController.IsFirstPerson())
         {
-            Vector3 rot = orientation.eulerAngles;
-
             playerObj.rotation =
-                Quaternion.Euler(0f, rot.y, 0f);
+                Quaternion.Euler(0f, orientation.eulerAngles.y, 0f);
         }
-        if (moveDir != Vector3.zero && !playerController.IsFirstPerson())
+        else if (moveDir != Vector3.zero)
         {
             Quaternion targetRot = Quaternion.LookRotation(moveDir);
+
             playerObj.rotation = Quaternion.Slerp(
                 playerObj.rotation,
                 targetRot,
-                rotationSpeed * Time.fixedDeltaTime
+                rotationSpeed * Time.deltaTime
             );
         }
     }
-    private void Jump()
-    {
-        rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
-    }
-
-    
-
-    private void ResetJump() => readyToJump = true;
-    public float GetSpeed() => new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude;
-
-    public Vector2 GetInputMove() => inputMove;
-    public bool IsJumping => isJumping;
-
-    private void OnCollisionStay(Collision collision)
-    {
-        // Check layer
-        if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
-            grounded = true;
-    }
-
-    private void OnCollisionExit(Collision collision)
-    {
-        if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
-            grounded = false;
-    }
-
     public void ApplySpeedBoost(float amount, float duration)
     {
         StartCoroutine(SpeedBoostCoroutine(amount, duration));
@@ -120,8 +122,23 @@ public class PlayerMovement : MonoBehaviour
 
     private IEnumerator SpeedBoostCoroutine(float amount, float duration)
     {
-        moveSpeed += amount;
+        moveSpeed = moveSpeed + amount;
+
         yield return new WaitForSeconds(duration);
-        moveSpeed -= amount;
+
+        moveSpeed = moveSpeed;
     }
+    // ===== Optional debug helpers =====
+
+    public float GetSpeed()
+    {
+        Vector3 v = controller.velocity;
+        v.y = 0;
+        return v.magnitude;
+    }
+    public Vector2 GetInputMove()
+    {
+        return inputMove;
+    }
+    public bool IsJumping => isJumping;
 }

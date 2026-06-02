@@ -16,6 +16,10 @@ public class BotController : MonoBehaviour, IRole
     {
         Agent = GetComponent<NavMeshAgent>();
         GetComponent<Health>().OnDie += HandleDie;
+
+        var killTable = FindObjectOfType<KillTable>();
+        if (killTable != null)
+            GetComponent<Health>().OnKilled += killTable.OnKilled;
     }
 
     private void HandleDie()

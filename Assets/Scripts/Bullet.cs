@@ -1,5 +1,4 @@
-﻿// Bullet.cs
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
@@ -11,14 +10,16 @@ public class Bullet : MonoBehaviour
     private bool isMoving;
     private GameRole ownerRole;
     private float spawnTime;
+    private GameObject owner;
 
-    public void Init(string tag, Vector3 target, GameRole role)
+    public void Init(string tag, Vector3 target, GameRole role, GameObject ownerObject = null)
     {
         poolTag = tag;
         targetPoint = target;
         isMoving = true;
         ownerRole = role;
         spawnTime = Time.time;
+        owner = ownerObject;
         transform.LookAt(targetPoint);
     }
 
@@ -32,7 +33,6 @@ public class Bullet : MonoBehaviour
             speed * Time.deltaTime
         );
 
-        // Hết lifetime thì return
         if (Time.time - spawnTime >= maxLifetime)
         {
             ReturnToPool();
@@ -45,18 +45,17 @@ public class Bullet : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-
         GameRole hitRole = RoleManager.Instance.GetRole(other.gameObject);
-
         if (hitRole != ownerRole && hitRole != GameRole.None)
         {
             if (other.TryGetComponent<IDamageable>(out var damageable))
             {
-                Debug.Log("Gây dame!");
-                damageable.TakeDamage(damage);
+                if (damageable is Health health)
+                    health.TakeDamage(damage, owner);
+                else
+                    damageable.TakeDamage(damage);
             }
         }
-
         ReturnToPool();
     }
 

@@ -1,4 +1,3 @@
-// RoleComponent.cs
 using UnityEngine;
 
 public class RoleComponent : MonoBehaviour
@@ -11,11 +10,11 @@ public class RoleComponent : MonoBehaviour
         RoleManager.Instance.Register(this);
         RoleManager.Instance.NotifyRolesChanged();
         GetComponent<IRole>()?.OnRoleChanged(role);
-
     }
 
     private void OnDestroy()
     {
-        RoleManager.Instance?.Unregister(this);
+        if (RoleManager.Instance != null)
+            RoleManager.Instance.Unregister(this);
     }
 }

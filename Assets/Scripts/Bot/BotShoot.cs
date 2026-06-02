@@ -1,4 +1,3 @@
-// BotShoot.cs
 using UnityEngine;
 
 public class BotShoot : MonoBehaviour
@@ -15,6 +14,6 @@ public class BotShoot : MonoBehaviour
         );
 
         if (obj != null && obj.TryGetComponent<Bullet>(out var bullet))
-            bullet.Init(bulletTag, targetPos, GameRole.Seeker);
+            bullet.Init(bulletTag, targetPos, GameRole.Seeker, gameObject); // Thêm gameObject
     }
 }
