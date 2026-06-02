@@ -191,13 +191,41 @@ public class GameManager : MonoBehaviour
             OnPingCooldownUpdate?.Invoke(0f);
 
             // get hiders
-            List<RoleComponent> hiders =
-                RoleManager.Instance.GetAllByRole(GameRole.Hider);
+            List<RoleComponent> hiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
+
+            // CHỈ HIỂN THỊ NẾU BẢN THÂN KHÔNG PHẢI SEEKER (Mọi Hider đều tự nhìn thấy nhau)
+            bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
+            if (!playerIsSeeker)
+            {
+                // Quét qua danh sách toàn bộ các Hider hiện tại (bao gồm cả Player lẫn Bot)
+                foreach (var hider in hiders)
+                {
+                    // Tự tìm script HiderPingIcon nằm trên nhân vật Hider đó và bật lên
+                    HiderPingIcon pingIcon = hider.GetComponentInChildren<HiderPingIcon>();
+                    if (pingIcon != null)
+                    {
+                        pingIcon.Show();
+                    }
+                }
+            }
 
             OnPingStart?.Invoke();
             OnPingHiders?.Invoke(hiders);
 
             yield return new WaitForSeconds(pingDuration);
+
+            // TẮT TẤT CẢ ICON KHI HẾT DURATION
+            foreach (var hider in hiders)
+            {
+                if (hider != null)
+                {
+                    HiderPingIcon pingIcon = hider.GetComponentInChildren<HiderPingIcon>();
+                    if (pingIcon != null)
+                    {
+                        pingIcon.Hide();
+                    }
+                }
+            }
 
             OnPingEnd?.Invoke();
             OnPingCooldownUpdate?.Invoke(1f);
@@ -227,6 +255,16 @@ public class GameManager : MonoBehaviour
 
         if (pingCoroutine != null)
             StopCoroutine(pingCoroutine);
+
+        // Tắt hết icon của tất cả các Hider khi game kết thúc
+        List<RoleComponent> hiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
+        foreach (var hider in hiders)
+        {
+            if (hider != null)
+            {
+                hider.GetComponentInChildren<HiderPingIcon>()?.Hide();
+            }
+        }
 
         timePlayGameUI.Hide();
         gameWinUI.Show();
