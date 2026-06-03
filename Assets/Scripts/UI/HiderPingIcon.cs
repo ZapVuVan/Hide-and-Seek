@@ -2,44 +2,61 @@
 
 public class HiderPingIcon : MonoBehaviour
 {
-    [SerializeField] private GameObject iconVisual; // Kéo Quad vào đây
+    [Header("UI")]
+    [SerializeField] private RectTransform icon;
+    [SerializeField] private Canvas canvas;
 
-    private Camera playerCamera; // Khai báo camera chính cụ thể
+    private Camera mainCam;
+    private RectTransform canvasRect;
+    private Transform target;
+
+    private bool isShowing;
 
     private void Awake()
     {
-        iconVisual.SetActive(false);
+        icon.gameObject.SetActive(false);
     }
 
     private void Start()
     {
-        // Cách lấy Camera chính an toàn nhất: 
-        // Tìm Camera được gắn trên cùng GameObject với PlayerController
-        PlayerController player = FindObjectOfType<PlayerController>();
-        if (player != null)
-        {
-            playerCamera = player.GetComponentInChildren<Camera>();
-        }
+        mainCam = Camera.main;
+        canvasRect = canvas.GetComponent<RectTransform>();
+        target = transform;
+    }
 
-        // Nếu không thấy, mới dùng tạm Camera.main nhưng có check lỗi
-        if (playerCamera == null)
-        {
-            playerCamera = Camera.main;
-        }
+    public void Show()
+    {
+        isShowing = true;
+        icon.gameObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        isShowing = false;
+        icon.gameObject.SetActive(false);
     }
 
     private void LateUpdate()
     {
-        if (!iconVisual.activeSelf) return;
-        if (playerCamera == null) return; // Nếu không có camera thì không xử lý tránh lỗi lay lắc
+        if (!isShowing) return;
+        if (target == null || mainCam == null) return;
 
-        // Billboard CHỈ hướng về duy nhất Player Camera, bỏ qua các camera phụ khác
-        transform.LookAt(
-            transform.position + playerCamera.transform.rotation * Vector3.forward,
-            playerCamera.transform.rotation * Vector3.up
+        Vector3 screenPos = mainCam.WorldToScreenPoint(target.position);
+
+        // nếu sau camera
+        if (screenPos.z < 0)
+        {
+            icon.gameObject.SetActive(false);
+            return;
+        }
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            screenPos,
+            null,
+            out Vector2 localPos
         );
-    }
 
-    public void Show() => iconVisual.SetActive(true);
-    public void Hide() => iconVisual.SetActive(false);
+        icon.anchoredPosition = localPos;
+    }
 }

@@ -10,13 +10,16 @@ public class GameManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private PlayerController player;
     [SerializeField] private List<BotController> bots;
-    [SerializeField] private RoleUI roleUI;
+    //[SerializeField] private RoleUI roleUI;
     [SerializeField] private HidingPhaseUI hidingPhaseUI;
     [SerializeField] private TimePlayGameUI timePlayGameUI;
     [SerializeField] private GameWinUI gameWinUI;
     [SerializeField] private GameObject playerActionUI;
     [SerializeField] private RoleRevealUI roleRevealUI;
     [SerializeField] private TimeHiderUI timeHiderUI;
+
+    [Header("Ping UI")]
+    [SerializeField] private HiderPingUIManager hiderPingUIManager;
 
     [Header("Config")]
     [SerializeField] private float roleAssignDelay = 3f;
@@ -27,11 +30,19 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float pingInterval = 15f;
     [SerializeField] private float pingDuration = 5f;
 
+    [Header("Coin Config")]
+    [SerializeField] private int killHiderCoin = 5;
+    [SerializeField] private int surviveCoin = 1;
+    [SerializeField] private float surviveInterval = 10f;
+
     private GameState currentState;
     public GameState CurrentState => currentState;
 
     private Coroutine playingTimerCoroutine;
     private Coroutine pingCoroutine;
+    private Coroutine hiderCoinCoroutine;
+
+    private Health[] allHealth;
 
     // ================= EVENTS =================
     public event Action<float> OnPingCooldownUpdate;
@@ -39,7 +50,31 @@ public class GameManager : MonoBehaviour
     public event Action OnPingEnd;
     public event Action<List<RoleComponent>> OnPingHiders;
 
-    private void Awake() => Instance = this;
+    private void Awake()
+    {
+        Instance = this;
+    }
+
+    // ================= SUBSCRIBE KILL EVENT =================
+    private void OnEnable()
+    {
+        allHealth = FindObjectsOfType<Health>();
+
+        foreach (var h in allHealth)
+        {
+            h.OnKilled += HandleKill;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (allHealth == null) return;
+
+        foreach (var h in allHealth)
+        {
+            h.OnKilled -= HandleKill;
+        }
+    }
 
     private void Start()
     {
@@ -77,7 +112,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ================= ROLE =================
+    // ================= ROLE ASSIGN =================
     private IEnumerator AssigningRolesCoroutine()
     {
         playerActionUI.SetActive(false);
@@ -115,8 +150,6 @@ public class GameManager : MonoBehaviour
     {
         bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
 
-        LockSeekers(true);
-
         if (playerIsSeeker)
             hidingPhaseUI.Show();
         else
@@ -136,8 +169,6 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
-        LockSeekers(false);
-
         hidingPhaseUI.Hide();
         timeHiderUI.Hide();
 
@@ -145,6 +176,17 @@ public class GameManager : MonoBehaviour
     }
 
     // ================= PLAYING =================
+    private void OnPlaying()
+    {
+        playerActionUI.SetActive(true);
+        //roleUI.Show();
+
+        playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
+        pingCoroutine = StartCoroutine(PingUI());
+
+        hiderCoinCoroutine = StartCoroutine(HiderSurviveCoin());
+    }
+
     private IEnumerator PlayingTimerCoroutine()
     {
         float timeLeft = playingDuration;
@@ -162,15 +204,24 @@ public class GameManager : MonoBehaviour
         TransitionToState(GameState.GameEnd);
     }
 
-    private void OnPlaying()
+    // ================= HIDER SURVIVE COIN =================
+    private IEnumerator HiderSurviveCoin()
     {
-        playerActionUI.SetActive(true);
-        roleUI.Show();
+        var role = player.GetComponent<RoleComponent>();
 
-        playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
-        pingCoroutine = StartCoroutine(PingUI());
+        if (role.Role != GameRole.Hider)
+            yield break;
 
-        Debug.Log("Game Start!");
+        while (currentState == GameState.Playing)
+        {
+            yield return new WaitForSeconds(surviveInterval);
+
+            if (currentState != GameState.Playing) yield break;
+            if (role.Role != GameRole.Hider) yield break;
+
+            CoinManager.Instance.AddCoin(surviveCoin);
+            NotificationCoin.Instance.ShowCoin(surviveCoin,1);
+        }
     }
 
     // ================= PING SYSTEM =================
@@ -178,7 +229,6 @@ public class GameManager : MonoBehaviour
     {
         while (true)
         {
-            // cooldown 1 -> 0
             float t = 0f;
 
             while (t < pingInterval)
@@ -188,60 +238,38 @@ public class GameManager : MonoBehaviour
                 yield return null;
             }
 
-            OnPingCooldownUpdate?.Invoke(0f);
-
-            // get hiders
-            List<RoleComponent> hiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
-
-            // CHỈ HIỂN THỊ NẾU BẢN THÂN KHÔNG PHẢI SEEKER (Mọi Hider đều tự nhìn thấy nhau)
-            bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
-            if (!playerIsSeeker)
-            {
-                // Quét qua danh sách toàn bộ các Hider hiện tại (bao gồm cả Player lẫn Bot)
-                foreach (var hider in hiders)
-                {
-                    // Tự tìm script HiderPingIcon nằm trên nhân vật Hider đó và bật lên
-                    HiderPingIcon pingIcon = hider.GetComponentInChildren<HiderPingIcon>();
-                    if (pingIcon != null)
-                    {
-                        pingIcon.Show();
-                    }
-                }
-            }
+            List<RoleComponent> hiders =
+                RoleManager.Instance.GetAllByRole(GameRole.Hider);
 
             OnPingStart?.Invoke();
             OnPingHiders?.Invoke(hiders);
 
+            hiderPingUIManager.SetHiders(hiders);
+
             yield return new WaitForSeconds(pingDuration);
 
-            // TẮT TẤT CẢ ICON KHI HẾT DURATION
-            foreach (var hider in hiders)
-            {
-                if (hider != null)
-                {
-                    HiderPingIcon pingIcon = hider.GetComponentInChildren<HiderPingIcon>();
-                    if (pingIcon != null)
-                    {
-                        pingIcon.Hide();
-                    }
-                }
-            }
+            hiderPingUIManager.Clear();
 
             OnPingEnd?.Invoke();
-            OnPingCooldownUpdate?.Invoke(1f);
         }
     }
 
-    // ================= LOCK =================
-    private void LockSeekers(bool locked)
+    // ================= KILL REWARD =================
+    private void HandleKill(GameObject killer, GameObject victim)
     {
-        if (player.GetComponent<RoleComponent>().Role == GameRole.Seeker)
-            player.movement.enabled = !locked;
+        if (killer == null || victim == null) return;
 
-        foreach (var bot in bots)
+        var killerRole = killer.GetComponent<RoleComponent>();
+        var victimRole = victim.GetComponent<RoleComponent>();
+
+        if (killerRole == null || victimRole == null) return;
+
+        // 🔴 SEEKER giết HIDER
+        if (killerRole.Role == GameRole.Seeker &&
+            victimRole.Role == GameRole.Hider && killer.tag == "Player")
         {
-            if (bot.GetComponent<RoleComponent>().Role == GameRole.Seeker)
-                bot.Agent.isStopped = locked;
+            CoinManager.Instance.AddCoin(killHiderCoin);
+            NotificationCoin.Instance.ShowCoin(killHiderCoin,2);
         }
     }
 
@@ -256,15 +284,10 @@ public class GameManager : MonoBehaviour
         if (pingCoroutine != null)
             StopCoroutine(pingCoroutine);
 
-        // Tắt hết icon của tất cả các Hider khi game kết thúc
-        List<RoleComponent> hiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
-        foreach (var hider in hiders)
-        {
-            if (hider != null)
-            {
-                hider.GetComponentInChildren<HiderPingIcon>()?.Hide();
-            }
-        }
+        if (hiderCoinCoroutine != null)
+            StopCoroutine(hiderCoinCoroutine);
+
+        hiderPingUIManager.Clear();
 
         timePlayGameUI.Hide();
         gameWinUI.Show();

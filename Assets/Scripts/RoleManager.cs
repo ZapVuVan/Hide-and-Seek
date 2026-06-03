@@ -5,7 +5,9 @@ using UnityEngine;
 public class RoleManager : MonoBehaviour
 {
     public static RoleManager Instance { get; private set; }
+
     private List<RoleComponent> allRoles = new List<RoleComponent>();
+
     public event System.Action OnRolesChanged;
 
     private void Awake() => Instance = this;
@@ -21,17 +23,16 @@ public class RoleManager : MonoBehaviour
 
     public void Unregister(RoleComponent role)
     {
-
         bool removed = allRoles.Remove(role);
         if (removed)
             OnRolesChanged?.Invoke();
     }
 
     public List<RoleComponent> GetAllByRole(GameRole role)
-        => allRoles.Where(r => r != null && r.Role == role).ToList(); 
+        => allRoles.Where(r => r != null && r.Role == role).ToList();
 
     public int CountByRole(GameRole role)
-        => allRoles.Count(r => r != null && r.Role == role); 
+        => allRoles.Count(r => r != null && r.Role == role);
 
     public GameRole GetRole(GameObject obj)
     {

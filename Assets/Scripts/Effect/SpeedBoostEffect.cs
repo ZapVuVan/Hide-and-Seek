@@ -6,7 +6,6 @@ public class SpeedBoostEffect : ItemEffect
 {
     public float amount;
     public float duration;
-
     public override void Apply(GameObject user)
     {
         if (user.TryGetComponent<PlayerMovement>(out var movement))

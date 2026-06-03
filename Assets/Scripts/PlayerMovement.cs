@@ -15,6 +15,13 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform orientation;
     [SerializeField] private Transform playerObj;
 
+
+    [SerializeField] private float airControlMultiplier = 0.5f;
+    [SerializeField] private float acceleration = 10f;
+    [SerializeField] private float airAcceleration = 4f;
+
+    private Vector3 horizontalVelocity;
+
     private CharacterController controller;
     private PlayerController playerController;
 
@@ -33,7 +40,7 @@ public class PlayerMovement : MonoBehaviour
     {
         inputMove = InputManager.instance.GetMoveInput();
         grounded = controller.isGrounded;
-
+        Debug.Log("Speed" + moveSpeed);
         HandleJump();
         Move();
         RotatePlayer();
@@ -57,27 +64,31 @@ public class PlayerMovement : MonoBehaviour
 
     private void Move()
     {
-        Vector3 flatForward =
-            new Vector3(orientation.forward.x, 0f, orientation.forward.z).normalized;
-
-        Vector3 flatRight =
-            new Vector3(orientation.right.x, 0f, orientation.right.z).normalized;
+        Vector3 flatForward = new Vector3(orientation.forward.x, 0f, orientation.forward.z).normalized;
+        Vector3 flatRight = new Vector3(orientation.right.x, 0f, orientation.right.z).normalized;
 
         Vector3 moveDir =
             flatForward * inputMove.y +
             flatRight * inputMove.x;
 
-        Vector3 horizontalVelocity = moveDir.normalized * moveSpeed;
+        bool isGrounded = controller.isGrounded;
 
-        // GRAVITY (mượt nhưng không float)
+        float currentAccel = isGrounded ? acceleration : airAcceleration;
+        float control = isGrounded ? 1f : airControlMultiplier;
+
+        Vector3 targetVelocity = moveDir * moveSpeed * control;
+
+        horizontalVelocity = Vector3.Lerp(
+            horizontalVelocity,
+            targetVelocity,
+            currentAccel * Time.deltaTime
+        );
+
+        // Gravity
         if (verticalVelocity < 0)
-        {
             verticalVelocity += gravity * 1.8f * Time.deltaTime;
-        }
         else
-        {
             verticalVelocity += gravity * Time.deltaTime;
-        }
 
         verticalVelocity = Mathf.Max(verticalVelocity, maxFallSpeed);
 
@@ -122,11 +133,13 @@ public class PlayerMovement : MonoBehaviour
 
     private IEnumerator SpeedBoostCoroutine(float amount, float duration)
     {
-        moveSpeed = moveSpeed + amount;
+        float originalSpeed = moveSpeed;
+
+        moveSpeed += amount;
 
         yield return new WaitForSeconds(duration);
 
-        moveSpeed = moveSpeed;
+        moveSpeed = originalSpeed;
     }
     // ===== Optional debug helpers =====
 

@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e003411eedf84644d962ed32e86e9c05, type: 3}
   m_Name: SpeedBoostEffect
   m_EditorClassIdentifier: 
+  cooldown: 8
   amount: 7
   duration: 4

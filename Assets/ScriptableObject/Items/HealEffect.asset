@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c35e6f3955987c546bd27f7089a20f88, type: 3}
   m_Name: HealEffect
   m_EditorClassIdentifier: 
+  cooldown: 30
   healAmount: 50

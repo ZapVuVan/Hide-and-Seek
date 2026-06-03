@@ -1,4 +1,4 @@
-﻿// BillboardUI.cs
+﻿
 using UnityEngine;
 
 public class BillboardUI : MonoBehaviour

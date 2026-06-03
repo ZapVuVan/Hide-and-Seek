@@ -32,7 +32,6 @@ public class Bullet : MonoBehaviour
             targetPoint,
             speed * Time.deltaTime
         );
-
         if (Time.time - spawnTime >= maxLifetime)
         {
             ReturnToPool();

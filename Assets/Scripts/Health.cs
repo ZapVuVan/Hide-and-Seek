@@ -6,7 +6,6 @@ public class Health : MonoBehaviour, IDamageable
     [SerializeField] private float maxHealth = 100f;
     private float currentHealth;
     private GameObject lastAttacker;
-
     public event EventHandler<float> OnHealthChanged;
     public event Action OnDie;
     public event Action<GameObject, GameObject> OnKilled;

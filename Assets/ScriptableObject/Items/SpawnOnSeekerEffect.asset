@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2936ed02ddd37e14489f8bafed2c1b31, type: 3}
   m_Name: SpawnOnSeekerEffect
   m_EditorClassIdentifier: 
-  prefab: {fileID: 432523462801471917, guid: 6cb6aa1a8147fee49bef4930e6ff8934, type: 3}
+  cooldown: 30
+  icePrefab: {fileID: 432523462801471917, guid: 6cb6aa1a8147fee49bef4930e6ff8934, type: 3}
   duration: 5

@@ -1,4 +1,5 @@
 ﻿// PlayerController.cs
+using System;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour, IRole
@@ -24,7 +25,10 @@ public class PlayerController : MonoBehaviour, IRole
         var killTable = FindObjectOfType<KillTable>();
         if (killTable != null)
             GetComponent<Health>().OnKilled += killTable.OnKilled;
+
     }
+
+ 
 
     private void Start()
     {

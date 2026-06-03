@@ -12,12 +12,12 @@ public class PlayerSeekerState : IPlayerState
         player.seekerCamera.gameObject.SetActive(true);
         player.seekerControlUI.SetActive(true);
         player.GetComponent<InvisibleController>()?.ResetInvisible();
-        var outline = player.GetComponent<Outline>();
-        if (outline != null)
-        {
-            outline.OutlineColor = Color.red;
-            outline.enabled = true;
-        }
+            //var outline = player.GetComponent<Outline>();
+            //if (outline != null)
+            //{
+            //    outline.OutlineColor = Color.red;
+            //    outline.enabled = true;
+            //}
     }
 
     public void ExitState(PlayerController player)
@@ -25,8 +25,8 @@ public class PlayerSeekerState : IPlayerState
         player.headMeshRenderer.SetActive(true);
         player.seekerCamera.gameObject.SetActive(false);
         player.seekerControlUI.SetActive(false);
-        var outline = player.GetComponent<Outline>();
-        if (outline != null) outline.enabled = false;
+        //var outline = player.GetComponent<Outline>();
+        //if (outline != null) outline.enabled = false;
     }
 
     public void UpdateState(PlayerController player)
