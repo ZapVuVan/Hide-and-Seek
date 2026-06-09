@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class BotController : MonoBehaviour, IRole
+public class BotController : MonoBehaviour, IRole, IFreezable
 {
     [SerializeField] public Transform[] patrolWaypoints;
     [HideInInspector] public int currentWaypointIndex = 0;
@@ -13,6 +15,9 @@ public class BotController : MonoBehaviour, IRole
     public BotSeekerState seekerState = new BotSeekerState();
     private bool isFrozen;
     private float freezeTimer;
+
+    // 🌟 Trạng thái kiểm tra xem Bot có đang được buff tốc độ hay không
+    [HideInInspector] public bool IsSpeedBoosted { get; private set; }
 
     // =====================
     // PING
@@ -65,6 +70,29 @@ public class BotController : MonoBehaviour, IRole
         }
     }
 
+    public void ApplySpeedBoost(float amount, float duration)
+    {
+        if (Agent == null) return;
+        StartCoroutine(SpeedBoostRoutine(amount, duration));
+    }
+
+    private IEnumerator SpeedBoostRoutine(float amount, float duration)
+    {
+        IsSpeedBoosted = true; // Kích hoạt trạng thái tăng động chạy loạn cho State đọc
+
+        float originalSpeed = Agent.speed;
+        Agent.speed += amount;
+
+        yield return new WaitForSeconds(duration);
+
+        if (Agent != null)
+        {
+            Agent.speed = originalSpeed; // Trả lại tốc độ cũ sau khi hết thời gian
+        }
+
+        IsSpeedBoosted = false; // Tắt trạng thái chạy loạn, đưa Bot về đi trốn bình thường
+    }
+
     private void OnPingEnd()
     {
         PingActive = false;
@@ -84,11 +112,32 @@ public class BotController : MonoBehaviour, IRole
         return float.MaxValue;
     }
 
+    // ⭐ ĐÃ SỬA: Thêm logic dừng Agent an toàn để xác không bị trôi
     private void HandleDie()
     {
         PingTarget = null;
         PingActive = false;
-        gameObject.SetActive(false);
+
+        // --- 🌟 THÊM LOGIC DỪNG AGENT TẠI ĐÂY ---
+        // Chúng ta gọi Stop để khử gia tốc ngay lập tức, tránh trôi xác.
+        // Không gọi SetActive(false) hay agent.enabled = false ở đây để tránh lỗi NavMesh đỏ Console.
+        if (Agent != null && Agent.isActiveAndEnabled && Agent.isOnNavMesh)
+        {
+            Agent.isStopped = true;
+            Agent.velocity = Vector3.zero; // Triệt tiêu vận tốc ngay lập tức
+        }
+        // ----------------------------------------
+
+        currentState = null; // Khóa bộ não State cũ lại để Bot nằm im khi gục
+    }
+
+    public void ResetStateOnRespawn(GameRole newRole)
+    {
+        isFrozen = false;
+        freezeTimer = 0f;
+
+        // Kích hoạt lại State Pattern chuyển sang trạng thái của phe mới
+        OnRoleChanged(newRole);
     }
 
     private void Start()
@@ -177,6 +226,8 @@ public class BotController : MonoBehaviour, IRole
         }
         return nearest;
     }
+
+  
 
     public void OnHit()
     {

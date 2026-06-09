@@ -1,4 +1,3 @@
-// TimePlayGameUI.cs
 using UnityEngine;
 using TMPro;
 
@@ -6,13 +5,18 @@ public class TimePlayGameUI : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI timerText;
 
-
-    public void Start()
+    private void Start()
     {
+        GameManager.Instance.OnGameStart += Show;
+        GameManager.Instance.OnPlayingTimeUpdate += UpdateTimer;
+        GameManager.Instance.OnGameFinish += Hide;
+
         Hide();
     }
+
     public void Show()
     {
+
         gameObject.SetActive(true);
     }
 
@@ -21,10 +25,11 @@ public class TimePlayGameUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void UpdateTimer(float timeLeft)
+    private void UpdateTimer(float timeLeft)
     {
         int minutes = Mathf.FloorToInt(timeLeft / 60f);
         int seconds = Mathf.FloorToInt(timeLeft % 60f);
-        timerText.text = string.Format("{0:0}:{1:00}", minutes, seconds);
+
+        timerText.text = $"{minutes:0}:{seconds:00}";
     }
 }

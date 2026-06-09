@@ -1,28 +1,72 @@
-// HidingPhaseUI.cs
-using UnityEngine;
+using System.Collections;
 using TMPro;
+using UnityEngine;
 
 public class HidingPhaseUI : MonoBehaviour
 {
-    [SerializeField] private GameObject panel;
-    [SerializeField] private TextMeshProUGUI timerText;
+    [Header("Panels")]
+    [SerializeField] private GameObject seekerPanel;
+    [SerializeField] private GameObject hiderPanel;
 
-    public void Start()
+    [Header("Timer Text")]
+    [SerializeField] private TextMeshProUGUI seekerTimerText;
+    [SerializeField] private TextMeshProUGUI hiderTimerText;
+
+    private Coroutine timerCoroutine;
+
+
+    private void Start()
     {
+        GameManager.Instance.OnHidingPhaseStart += Show;
         Hide();
     }
-    public void Show()
+
+    public void Show(float duration, bool isSeeker)
     {
-        panel.SetActive(true);
+        seekerPanel.SetActive(isSeeker);
+        hiderPanel.SetActive(!isSeeker);
+
+        if (timerCoroutine != null)
+            StopCoroutine(timerCoroutine);
+
+        timerCoroutine = StartCoroutine(UpdateTimer(duration, isSeeker));
     }
 
     public void Hide()
     {
-        panel.SetActive(false);
+        seekerPanel.SetActive(false);
+        hiderPanel.SetActive(false);
+
+        if (timerCoroutine != null)
+        {
+            StopCoroutine(timerCoroutine);
+            timerCoroutine = null;
+        }
     }
 
-    public void UpdateTimer(float timeLeft)
+    private IEnumerator UpdateTimer(float duration, bool isSeeker)
     {
-        timerText.text = Mathf.CeilToInt(timeLeft).ToString();
+        float timeLeft = duration;
+
+        while (timeLeft > 0)
+        {
+            string timeText = Mathf.CeilToInt(timeLeft).ToString();
+
+            if (isSeeker)
+                seekerTimerText.text = timeText;
+            else
+                hiderTimerText.text = timeText;
+
+            timeLeft -= Time.deltaTime;
+
+            yield return null;
+        }
+
+        if (isSeeker)
+            seekerTimerText.text = "0";
+        else
+            hiderTimerText.text = "0";
+
+        Hide();
     }
 }

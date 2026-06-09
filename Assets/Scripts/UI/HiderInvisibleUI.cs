@@ -1,63 +1,47 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // Thêm thư viện này để quản lý chữ TextMeshPro
 
 public class HiderInvisibleUI : MonoBehaviour
 {
     [Header("UI Elements")]
-    [Tooltip("Kéo tấm ảnh màu xanh (ảnh dùng fillAmount) vào đây")]
     [SerializeField] private Image invisibleBar;
 
-    // Cache các thành phần hiển thị để bật/tắt
-    private Image[] _allImages;
-    private TextMeshProUGUI[] _allTexts;
-
-    private void Awake()
+    private void Start()
     {
-        // Tự động lấy tất cả các Image và Text nằm trong Object này và các Object con
-        _allImages = GetComponentsInChildren<Image>(true);
-        _allTexts = GetComponentsInChildren<TextMeshProUGUI>(true);
-
-        // Nếu quên chưa kéo thanh fill vào Inspector, tự động tìm đứa con trùng tên
+        // Nếu chưa kéo thả trong Inspector, tự tìm Image trên chính Object này
         if (invisibleBar == null)
         {
-            foreach (Image img in _allImages)
-            {
-                // Tìm đứa con nào tên là InvisibleBar và có kiểu fill là Filled
-                if (img.gameObject != this.gameObject && img.type == Image.Type.Filled)
-                {
-                    invisibleBar = img;
-                    break;
-                }
-            }
+            invisibleBar = GetComponent<Image>();
         }
     }
 
-    public void SetFill(float value)
+    private void OnEnable()
     {
-        if (invisibleBar != null)
-        {
-            invisibleBar.fillAmount = Mathf.Clamp01(value);
-        }
+        InvisibleController.OnInvisibleUpdated += UpdateUI;
     }
 
-    public void SetBarVisible(bool visible)
+    private void OnDisable()
     {
-        if (_allImages != null)
-        {
-            for (int i = 0; i < _allImages.Length; i++)
-            {
-                if (_allImages[i] != null) _allImages[i].enabled = visible;
-            }
-        }
-
-        // Bật/tắt tất cả chữ (Chữ "Tàng hình")
-        if (_allTexts != null)
-        {
-            for (int i = 0; i < _allTexts.Length; i++)
-            {
-                if (_allTexts[i] != null) _allTexts[i].enabled = visible;
-            }
-        }
+        InvisibleController.OnInvisibleUpdated -= UpdateUI;
     }
+
+    // Xử lý trực tiếp: Vừa tăng giảm fillAmount, vừa ẩn hiện ảnh nếu cần
+    private void UpdateUI(float fillValue)
+    {
+        if (invisibleBar == null) return;
+
+        // Cập nhật giá trị thanh bar
+        invisibleBar.fillAmount = Mathf.Clamp01(fillValue);
+
+        // Tự động ẩn hẳn Image đi khi giá trị bằng 0 (nếu bạn muốn ẩn khi không tàng hình)
+        // Hoặc bạn có thể xóa 2 dòng dưới nếu muốn thanh bar luôn hiển thị trên màn hình.
+        bool shouldShow = fillValue > 0f;
+        if (invisibleBar.enabled != shouldShow) invisibleBar.enabled = shouldShow;
+    }
+
+    // Các hàm Force cũ nếu bạn còn gọi từ nơi khác (giữ lại để không lỗi code)
+    public void ForceShow() { if (invisibleBar != null) invisibleBar.enabled = true; }
+    public void ForceHide() { if (invisibleBar != null) invisibleBar.enabled = false; }
+    public void SetFill(float value) { if (invisibleBar != null) invisibleBar.fillAmount = Mathf.Clamp01(value); }
+    public void SetBarVisible(bool visible) { if (invisibleBar != null) invisibleBar.enabled = visible; }
 }

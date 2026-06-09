@@ -1,22 +1,30 @@
-﻿// MapZone.cs - gắn vào BoxCheck_1 và BoxCheck_2
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class MapZone : MonoBehaviour
 {
-    public string sceneName; // Map_1 hoặc Map_2
-    private bool playerInside = false;
+    public string sceneName;
 
-    public bool HasPlayer() => playerInside;
+    private HashSet<GameObject> playersInside = new();
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
-            playerInside = true;
+        {
+            playersInside.Add(other.gameObject);
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
-            playerInside = false;
+        {
+            playersInside.Remove(other.gameObject);
+        }
+    }
+
+    public int GetPlayerCount()
+    {
+        return playersInside.Count;
     }
 }

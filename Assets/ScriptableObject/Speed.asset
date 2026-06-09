@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39ab0e1c31ad80c409f4189d984e9925, type: 3}
+  m_Name: Speed
+  m_EditorClassIdentifier: 
+  itemId: Speed_01
+  itemName: Speed
+  icon: {fileID: 21300000, guid: 86991e39c8d864b198c0b90042adfcc5, type: 3}
+  itemType: 2
+  rarity: 2
+  price: 200
+  isDefault: 0
+  description: "Speeed\u0111"
+  maxCharges: 99
+  cooldown: 20
+  speedAmount: 7
+  speedDuration: 5

@@ -1,16 +1,14 @@
-﻿// MapSelectManager.cs - gắn vào MapSelect object
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
 
 public class MapSelectManager : MonoBehaviour
 {
-    [SerializeField] private MapZone zone1; // BoxCheck_1
-    [SerializeField] private MapZone zone2; // BoxCheck_2
+    [SerializeField] private MapZone zone1;
+    [SerializeField] private MapZone zone2;
     [SerializeField] private TextMeshProUGUI countdownText;
     [SerializeField] private float waitTime = 15f;
-    [SerializeField] private string defaultScene = "GamePlay"; // nếu k đứng trong box nào
 
     private void Start()
     {
@@ -20,6 +18,7 @@ public class MapSelectManager : MonoBehaviour
     private IEnumerator CountdownCoroutine()
     {
         float timeLeft = waitTime;
+
         while (timeLeft > 0)
         {
             countdownText.text = Mathf.CeilToInt(timeLeft).ToString();
@@ -27,12 +26,28 @@ public class MapSelectManager : MonoBehaviour
             yield return null;
         }
 
-        // ✅ Hết giờ → check box
-        if (zone1.HasPlayer())
-            SceneManager.LoadScene(zone1.sceneName);
-        else if (zone2.HasPlayer())
-            SceneManager.LoadScene(zone2.sceneName);
+        int map1Votes = zone1.GetPlayerCount();
+        int map2Votes = zone2.GetPlayerCount();
+
+        string selectedScene;
+
+        if (map1Votes > map2Votes)
+        {
+            selectedScene = zone1.sceneName;
+        }
+        else if (map2Votes > map1Votes)
+        {
+            selectedScene = zone2.sceneName;
+        }
         else
-            SceneManager.LoadScene(defaultScene); // random hoặc default
+        {
+            // Hoà nhau -> random 1 trong 2 map
+            selectedScene = Random.value < 0.5f
+                ? zone1.sceneName
+                : zone2.sceneName;
+        }
+
+        Debug.Log($"Map selected: {selectedScene}");
+        SceneManager.LoadScene(selectedScene);
     }
 }

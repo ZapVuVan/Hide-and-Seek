@@ -7,9 +7,12 @@ public class HiderPingUIManager : MonoBehaviour
     [SerializeField] private Canvas canvas;
     [SerializeField] private Camera mainCamera;
 
+
     private List<(RoleComponent hider, GameObject icon)> activeIcons = new();
+    public static HiderPingUIManager Instance { get; private set; }
     private void Awake()
     {
+        Instance = this;
         if (mainCamera == null)
             mainCamera = Camera.main;
 

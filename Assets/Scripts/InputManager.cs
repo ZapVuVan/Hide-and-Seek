@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
@@ -10,6 +8,7 @@ public class InputManager : MonoBehaviour
     private bool _switchPressed;
 
     [SerializeField] private Joystick moveJoystick;
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -22,14 +21,34 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    public void Update()
-    {
-        
-    }
     public Vector2 GetMoveInput()
     {
-        return new Vector2(moveJoystick.Horizontal, moveJoystick.Vertical);
+#if UNITY_EDITOR || UNITY_STANDALONE
+
+        Vector2 keyboardInput = new Vector2(
+            Input.GetAxisRaw("Horizontal"),
+            Input.GetAxisRaw("Vertical")
+        );
+
+        Vector2 joystickInput = new Vector2(
+            moveJoystick.Horizontal,
+            moveJoystick.Vertical
+        );
+
+        return keyboardInput.sqrMagnitude > 0.01f
+            ? keyboardInput
+            : joystickInput;
+
+#else
+
+        return new Vector2(
+            moveJoystick.Horizontal,
+            moveJoystick.Vertical
+        );
+
+#endif
     }
+
     public void OnJumpPressed()
     {
         _jumpPressed = true;
@@ -39,6 +58,7 @@ public class InputManager : MonoBehaviour
     {
         _switchPressed = true;
     }
+
     public bool GetJumpInput()
     {
         bool val = _jumpPressed;
@@ -46,4 +66,10 @@ public class InputManager : MonoBehaviour
         return val;
     }
 
+    public bool GetSwitchInput()
+    {
+        bool val = _switchPressed;
+        _switchPressed = false;
+        return val;
+    }
 }

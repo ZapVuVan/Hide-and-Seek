@@ -1,34 +1,68 @@
-﻿// SpawnManager.cs
+﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
 public class SpawnManager : MonoBehaviour
 {
     public static SpawnManager Instance { get; private set; }
 
-    [SerializeField] private List<GameObject> spawnPoints;
+    [Header("Bot Spawn Points")]
+    [SerializeField] private Transform[] spawnPoints;
 
-    private void Awake() => Instance = this;
+    private List<Transform> availablePoints;
 
-    public Vector3 GetRandomSpawnPoint()
+    private void Awake()
     {
-        if (spawnPoints.Count == 0) return Vector3.zero;
-        return spawnPoints[Random.Range(0, spawnPoints.Count)].transform.position;
+        Instance = this;
+        ResetPool();
     }
 
-    public void StartRespawn(GameObject obj, float delay)
+    public void ResetPool()
     {
-        StartCoroutine(RespawnCoroutine(obj, delay));
+        availablePoints = new List<Transform>();
+
+        if (spawnPoints == null) return;
+
+        foreach (var p in spawnPoints)
+        {
+            if (p != null)
+                availablePoints.Add(p);
+        }
     }
 
-    private IEnumerator RespawnCoroutine(GameObject obj, float delay)
+    public Transform GetRandomSpawnPoint()
     {
-        obj.SetActive(false);
-        yield return new WaitForSeconds(delay);
+        if (availablePoints == null || availablePoints.Count == 0)
+            ResetPool();
 
-        obj.transform.position = GetRandomSpawnPoint();
-        obj.SetActive(true);
-        obj.GetComponent<RoleComponent>()?.SetRole(GameRole.Seeker);
+        if (availablePoints.Count == 0)
+        {
+            Debug.LogError("No spawn points available!");
+            return null;
+        }
+
+        int index = Random.Range(0, availablePoints.Count);
+        Transform point = availablePoints[index];
+
+        availablePoints.RemoveAt(index);
+
+        return point;
     }
+
+    public List<Transform> GetSpawnPoints(int count)
+    {
+        ResetPool();
+
+        List<Transform> result = new List<Transform>();
+
+        int safeCount = Mathf.Min(count, spawnPoints.Length);
+
+        for (int i = 0; i < safeCount; i++)
+        {
+            result.Add(GetRandomSpawnPoint());
+        }
+
+        return result;
+    }
+
+
 }

@@ -8,6 +8,7 @@ public class PlayerSeekerState : IPlayerState
     public void EnterState(PlayerController player)
     {
         Debug.Log("EnterState Seeker");
+ 
         player.headMeshRenderer.SetActive(false);
         player.seekerCamera.gameObject.SetActive(true);
         player.seekerControlUI.SetActive(true);

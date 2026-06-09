@@ -1,106 +1,112 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 public class InvisibleController : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private Transform targetObj;
-    [SerializeField] private HiderInvisibleUI invisibleUI;
-
     [Header("Settings")]
-    [SerializeField] private float fillSpeed = 0.3f;
-    [SerializeField] private float drainSpeed = 0.5f;
+    [SerializeField] private float fillSpeed = 0.66f;
+    [SerializeField] private float drainSpeed = 0.14f;
     [SerializeField] private float speedThreshold = 0.1f;
-    [SerializeField] private float fadeSpeed = 3f;
 
-    [Header("Runtime Info")]
+    // 🔥 Event chỉ cần truyền đúng giá trị fillAmount hiện tại
+    public static event Action<float> OnInvisibleUpdated;
+
+    private RoleComponent _role;
+    private List<Material> _materials = new();
     public float _fillAmount;
-    public float _currentAlpha = 1f;
-
-    private List<Material> _cachedMaterials = new List<Material>();
-    private bool _isLocalPlayer; // Biến kiểm tra tự động bằng Tag
 
     private void Awake()
     {
-        if (targetObj == null) targetObj = this.transform;
+        _role = GetComponentInParent<RoleComponent>();
+        foreach (var r in GetComponentsInChildren<Renderer>())
+            _materials.AddRange(r.materials);
+    }
 
-        // Tự động kiểm tra: Nếu Object này hoặc Object cha của nó có Tag là "Player"
-        _isLocalPlayer = transform.root.CompareTag("Player") || CompareTag("Player");
+    private bool IsHider()
+    {
+        return _role != null && _role.Role == GameRole.Hider;
+    }
 
-        // Cache vật liệu để bản build mượt, tránh lỗi tràn bộ nhớ (Cả Player và Bot đều cần)
-        Renderer[] renderers = targetObj.GetComponentsInChildren<Renderer>();
-        foreach (Renderer r in renderers)
+    public void SetTransparentMode()
+    {
+        foreach (var mat in _materials)
         {
-            _cachedMaterials.AddRange(r.materials);
+            if (mat == null) continue;
+            mat.SetFloat("_Surface", 1f);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_ALPHABLEND_ON");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            mat.renderQueue = 3000;
         }
+    }
 
-        // CHỈ CÓ NHÂN VẬT MANG TAG "Player" mới đi tìm và quản lý UI
-        if (_isLocalPlayer)
+    public void SetOpaqueMode()
+    {
+        foreach (var mat in _materials)
         {
-            if (invisibleUI == null)
-            {
-                invisibleUI = Object.FindAnyObjectByType<HiderInvisibleUI>();
-            }
-
-            if (invisibleUI != null)
-            {
-                invisibleUI.SetFill(0f);
-                invisibleUI.SetBarVisible(false);
-            }
+            if (mat == null) continue;
+            mat.SetFloat("_Surface", 0f);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+            mat.SetInt("_ZWrite", 1);
+            mat.DisableKeyword("_ALPHABLEND_ON");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            mat.renderQueue = -1;
         }
     }
 
     public void UpdateInvisible(float speed)
     {
-        // Tính toán trạng thái tàng hình (Cả Player và Bot đều chạy để ẩn mô hình 3D)
-        bool isStanding = speed < speedThreshold;
-
-        _fillAmount += isStanding
-            ? fillSpeed * Time.deltaTime
-            : -drainSpeed * Time.deltaTime;
-
-        _fillAmount = Mathf.Clamp01(_fillAmount);
-
-        // CHỈ CÓ NHÂN VẬT MANG TAG "Player" mới được cập nhật lên thanh UI màn hình
-        if (_isLocalPlayer && invisibleUI != null)
+        if (!IsHider())
         {
-            invisibleUI.SetBarVisible(true);
-            invisibleUI.SetFill(_fillAmount);
+            // Nếu không phải Hider, ép thanh fill về 0
+            OnInvisibleUpdated?.Invoke(0f);
+            return;
         }
 
-        float targetAlpha = 1f - _fillAmount;
-        _currentAlpha = Mathf.Lerp(_currentAlpha, targetAlpha, fadeSpeed * Time.deltaTime);
+        bool isStanding = speed < speedThreshold;
+        float target = isStanding ? 1f : 0f;
+        float rate = isStanding ? fillSpeed : drainSpeed;
 
-        ApplyAlpha();
+        _fillAmount = Mathf.MoveTowards(_fillAmount, target, rate * Time.deltaTime);
+        _fillAmount = Mathf.Clamp01(_fillAmount);
+
+        ApplyFade();
+
+        // 🔥 Bắn sự kiện cập nhật fill
+        OnInvisibleUpdated?.Invoke(_fillAmount);
     }
 
-    private void ApplyAlpha()
+    private void ApplyFade()
     {
-        for (int i = 0; i < _cachedMaterials.Count; i++)
+        float alpha = 1f - _fillAmount;
+        foreach (var mat in _materials)
         {
-            Material mat = _cachedMaterials[i];
             if (mat == null) continue;
-
-            if (mat.HasProperty("_Color"))
-            {
-                Color c = mat.color;
-                c.a = _currentAlpha;
-                mat.color = c;
-            }
+            Color c = mat.color;
+            c.a = alpha;
+            mat.color = c;
+            mat.SetFloat("_Cutoff", 0.001f);
         }
     }
 
     public void ResetInvisible()
     {
         _fillAmount = 0f;
-        _currentAlpha = 1f;
-
-        if (_isLocalPlayer && invisibleUI != null)
+        foreach (var mat in _materials)
         {
-            invisibleUI.SetFill(0f);
-            invisibleUI.SetBarVisible(false);
+            if (mat == null) continue;
+            Color c = mat.color;
+            c.a = 1f;
+            mat.color = c;
+            mat.SetFloat("_Cutoff", 0.001f);
         }
 
-        ApplyAlpha();
+        OnInvisibleUpdated?.Invoke(0f);
     }
 }

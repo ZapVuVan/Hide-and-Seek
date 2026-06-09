@@ -7,8 +7,8 @@ public class RoleRevealUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
     [SerializeField] private TextMeshProUGUI roleText;
-    [SerializeField] private float spinDuration = 2.5f; // thời gian chạy loạn
-    [SerializeField] private float slowDuration = 0.5f;  // thời gian chậm dần
+    [SerializeField] private float spinDuration = 2f; // thời gian chạy loạn
+    [SerializeField] private float slowDuration = 1f;  // thời gian chậm dần
 
     private string[] labels = { "HIDER", "SEEKER" };
 

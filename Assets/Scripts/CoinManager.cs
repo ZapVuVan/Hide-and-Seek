@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public class CoinManager : MonoBehaviour
@@ -38,7 +38,6 @@ public class CoinManager : MonoBehaviour
 
     public int GetCoin() => coin;
 
-    // ================= SAVE / LOAD =================
 
     public void SaveCoin()
     {
@@ -57,5 +56,20 @@ public class CoinManager : MonoBehaviour
         coin = 0;
         PlayerPrefs.DeleteKey(COIN_KEY);
         OnCoinChanged?.Invoke(coin);
+    }
+
+    [ContextMenu("Reset Coins")]
+    void DEBUG_ResetCoins()
+    {
+        ResetCoin();
+        PlayerPrefs.Save();
+        Debug.Log("[DEBUG] Đã reset coins về 0!");
+    }
+
+    [ContextMenu("Add 9999 Coins")]
+    void DEBUG_AddCoins()
+    {
+        AddCoin(9999);
+        Debug.Log("[DEBUG] Đã thêm 9999 coins!");
     }
 }

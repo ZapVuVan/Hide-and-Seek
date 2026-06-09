@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,30 +11,27 @@ public class GameManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private PlayerController player;
     [SerializeField] private List<BotController> bots;
-    //[SerializeField] private RoleUI roleUI;
-    [SerializeField] private HidingPhaseUI hidingPhaseUI;
-    [SerializeField] private TimePlayGameUI timePlayGameUI;
     [SerializeField] private GameWinUI gameWinUI;
     [SerializeField] private GameObject playerActionUI;
+
+    [Header("AssignDelay")]
+    [SerializeField] private float roleAssignDelay = 0.5f;
     [SerializeField] private RoleRevealUI roleRevealUI;
-    [SerializeField] private TimeHiderUI timeHiderUI;
-
-    [Header("Ping UI")]
-    [SerializeField] private HiderPingUIManager hiderPingUIManager;
-
-    [Header("Config")]
-    [SerializeField] private float roleAssignDelay = 3f;
     [SerializeField] private float hidingPhaseDuration = 15f;
     [SerializeField] private float playingDuration = 90f;
 
-    [Header("Ping Config")]
+    [Header("Ping Setting")]
     [SerializeField] private float pingInterval = 15f;
     [SerializeField] private float pingDuration = 5f;
 
-    [Header("Coin Config")]
+    [Header("Coin Setting")]
     [SerializeField] private int killHiderCoin = 5;
     [SerializeField] private int surviveCoin = 1;
     [SerializeField] private float surviveInterval = 10f;
+
+    [Header("Respawn Setting")]
+    [SerializeField] private float timeRespawn = 5f;
+    [SerializeField] private float deathAnimDelay = 2f; // Delay chờ anim chết của Player
 
     private GameState currentState;
     public GameState CurrentState => currentState;
@@ -45,6 +43,11 @@ public class GameManager : MonoBehaviour
     private Health[] allHealth;
 
     // ================= EVENTS =================
+    public event Action<float, bool> OnHidingPhaseStart;
+    public event Action OnGameStart;
+    public event Action<float> OnPlayingTimeUpdate;
+    public event Action OnGameFinish;
+
     public event Action<float> OnPingCooldownUpdate;
     public event Action OnPingStart;
     public event Action OnPingEnd;
@@ -55,15 +58,29 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
-    // ================= SUBSCRIBE KILL EVENT =================
+    private void Start()
+    {
+        try
+        {
+            StartCoroutine(SpawnCharactersAtStartCoroutine());
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("SPAWN ERROR: " + e);
+        }
+
+        if (RoleManager.Instance != null)
+            RoleManager.Instance.OnRolesChanged += CheckGameEnd;
+
+        TransitionToState(GameState.AssigningRoles);
+    }
+
     private void OnEnable()
     {
         allHealth = FindObjectsOfType<Health>();
 
         foreach (var h in allHealth)
-        {
             h.OnKilled += HandleKill;
-        }
     }
 
     private void OnDisable()
@@ -71,20 +88,72 @@ public class GameManager : MonoBehaviour
         if (allHealth == null) return;
 
         foreach (var h in allHealth)
-        {
             h.OnKilled -= HandleKill;
-        }
-    }
-
-    private void Start()
-    {
-        RoleManager.Instance.OnRolesChanged += CheckGameEnd;
-        TransitionToState(GameState.AssigningRoles);
     }
 
     private void OnDestroy()
     {
-        RoleManager.Instance.OnRolesChanged -= CheckGameEnd;
+        if (RoleManager.Instance != null)
+            RoleManager.Instance.OnRolesChanged -= CheckGameEnd;
+    }
+
+    // ================= SPAWN =================
+    private IEnumerator SpawnCharactersAtStartCoroutine()
+    {
+        if (SpawnManager.Instance == null)
+        {
+            Debug.LogError("SpawnManager NULL");
+            yield break;
+        }
+
+        // --- FIX FOR PLAYER ---
+        if (player != null)
+        {
+            Transform playerSpawn = SpawnManager.Instance.GetRandomSpawnPoint();
+            if (playerSpawn != null)
+            {
+                var cc = player.GetComponent<CharacterController>();
+                var rb = player.GetComponent<Rigidbody>();
+                var agent = player.GetComponent<NavMeshAgent>();
+
+                if (cc != null) cc.enabled = false;
+                if (agent != null) agent.enabled = false;
+                if (rb != null) rb.isKinematic = true;
+
+                player.transform.SetPositionAndRotation(playerSpawn.position, playerSpawn.rotation);
+
+                yield return null;
+
+                if (cc != null) cc.enabled = true;
+                if (rb != null) rb.isKinematic = false;
+                if (agent != null)
+                {
+                    agent.enabled = true;
+                    if (agent.isOnNavMesh) agent.Warp(playerSpawn.position);
+                }
+            }
+        }
+
+        // --- FIX FOR BOTS ---
+        foreach (var bot in bots)
+        {
+            if (bot == null) continue;
+            Transform spawn = SpawnManager.Instance.GetRandomSpawnPoint();
+            if (spawn == null) continue;
+
+            var agent = bot.GetComponent<NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+
+            bot.transform.SetPositionAndRotation(spawn.position, spawn.rotation);
+
+            yield return null;
+
+            if (agent != null)
+            {
+                agent.enabled = true;
+                if (agent.isOnNavMesh) agent.Warp(spawn.position);
+            }
+        }
     }
 
     // ================= STATE =================
@@ -112,65 +181,42 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ================= ROLE ASSIGN =================
+    // ================= ROLE =================
     private IEnumerator AssigningRolesCoroutine()
     {
         playerActionUI.SetActive(false);
 
         yield return new WaitForSeconds(roleAssignDelay);
 
-        List<GameObject> allCharacters = new List<GameObject>();
-        allCharacters.Add(player.gameObject);
-
-        foreach (var bot in bots)
-            allCharacters.Add(bot.gameObject);
-
-        int seekerIndex = UnityEngine.Random.Range(0, allCharacters.Count);
-
-        GameRole playerRole = GameRole.Hider;
-
-        for (int i = 0; i < allCharacters.Count; i++)
-        {
-            GameRole role = (i == seekerIndex) ? GameRole.Seeker : GameRole.Hider;
-            allCharacters[i].GetComponent<RoleComponent>()?.SetRole(role);
-
-            if (i == 0)
-                playerRole = role;
-        }
+        GameRole playerRole = RoleManager.Instance.GenerateRoles(player, bots);
 
         if (roleRevealUI != null)
-            yield return StartCoroutine(roleRevealUI.PlayReveal(playerRole));
+            yield return roleRevealUI.PlayReveal(playerRole);
 
-        playerActionUI.SetActive(true);
+        RoleManager.Instance.ApplyRoles();
+
+        if (player != null)
+        {
+            var playerRoleComp = player.GetComponent<RoleComponent>();
+
+            bool isHider =
+                playerRoleComp != null &&
+                playerRoleComp.Role == GameRole.Hider;
+
+            playerActionUI.SetActive(isHider);
+        }
+
         TransitionToState(GameState.HidingPhase);
     }
 
     // ================= HIDING =================
     private IEnumerator HidingPhaseCoroutine()
     {
-        bool playerIsSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
+        bool isSeeker = player.GetComponent<RoleComponent>().Role == GameRole.Seeker;
 
-        if (playerIsSeeker)
-            hidingPhaseUI.Show();
-        else
-            timeHiderUI.Show();
+        OnHidingPhaseStart?.Invoke(hidingPhaseDuration, isSeeker);
 
-        float timeLeft = hidingPhaseDuration;
-
-        while (timeLeft > 0)
-        {
-            timeLeft -= Time.deltaTime;
-
-            if (playerIsSeeker)
-                hidingPhaseUI.UpdateTimer(timeLeft);
-            else
-                timeHiderUI.UpdateTimer(timeLeft);
-
-            yield return null;
-        }
-
-        hidingPhaseUI.Hide();
-        timeHiderUI.Hide();
+        yield return new WaitForSeconds(hidingPhaseDuration);
 
         TransitionToState(GameState.Playing);
     }
@@ -178,12 +224,9 @@ public class GameManager : MonoBehaviour
     // ================= PLAYING =================
     private void OnPlaying()
     {
-        playerActionUI.SetActive(true);
-        //roleUI.Show();
-
+        playerActionUI?.SetActive(true);
         playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
         pingCoroutine = StartCoroutine(PingUI());
-
         hiderCoinCoroutine = StartCoroutine(HiderSurviveCoin());
     }
 
@@ -191,25 +234,24 @@ public class GameManager : MonoBehaviour
     {
         float timeLeft = playingDuration;
 
-        timePlayGameUI.Show();
+        OnGameStart?.Invoke();
 
         while (timeLeft > 0)
         {
             timeLeft -= Time.deltaTime;
-            timePlayGameUI.UpdateTimer(timeLeft);
+            OnPlayingTimeUpdate?.Invoke(timeLeft);
             yield return null;
         }
 
-        timePlayGameUI.Hide();
         TransitionToState(GameState.GameEnd);
     }
 
-    // ================= HIDER SURVIVE COIN =================
+    // ================= HIDER COIN =================
     private IEnumerator HiderSurviveCoin()
     {
         var role = player.GetComponent<RoleComponent>();
 
-        if (role.Role != GameRole.Hider)
+        if (role == null || role.Role != GameRole.Hider)
             yield break;
 
         while (currentState == GameState.Playing)
@@ -220,11 +262,12 @@ public class GameManager : MonoBehaviour
             if (role.Role != GameRole.Hider) yield break;
 
             CoinManager.Instance.AddCoin(surviveCoin);
-            NotificationCoin.Instance.ShowCoin(surviveCoin,1);
+            gameWinUI.AddMatchCoin(surviveCoin); // ✅ Sửa: dùng surviveCoin thay vì killHiderCoin
+            NotificationCoin.Instance.ShowCoin(surviveCoin, 1);
         }
     }
 
-    // ================= PING SYSTEM =================
+    // ================= PING =================
     private IEnumerator PingUI()
     {
         while (true)
@@ -233,10 +276,14 @@ public class GameManager : MonoBehaviour
 
             while (t < pingInterval)
             {
+                if (currentState != GameState.Playing) yield break;
+
                 t += Time.deltaTime;
                 OnPingCooldownUpdate?.Invoke(1f - (t / pingInterval));
                 yield return null;
             }
+
+            if (currentState != GameState.Playing) yield break;
 
             List<RoleComponent> hiders =
                 RoleManager.Instance.GetAllByRole(GameRole.Hider);
@@ -244,17 +291,16 @@ public class GameManager : MonoBehaviour
             OnPingStart?.Invoke();
             OnPingHiders?.Invoke(hiders);
 
-            hiderPingUIManager.SetHiders(hiders);
+            HiderPingUIManager.Instance.SetHiders(hiders);
 
             yield return new WaitForSeconds(pingDuration);
 
-            hiderPingUIManager.Clear();
-
+            HiderPingUIManager.Instance.Clear();
             OnPingEnd?.Invoke();
         }
     }
 
-    // ================= KILL REWARD =================
+    // ================= KILL =================
     private void HandleKill(GameObject killer, GameObject victim)
     {
         if (killer == null || victim == null) return;
@@ -264,13 +310,94 @@ public class GameManager : MonoBehaviour
 
         if (killerRole == null || victimRole == null) return;
 
-        // 🔴 SEEKER giết HIDER
         if (killerRole.Role == GameRole.Seeker &&
-            victimRole.Role == GameRole.Hider && killer.tag == "Player")
+            victimRole.Role == GameRole.Hider)
         {
-            CoinManager.Instance.AddCoin(killHiderCoin);
-            NotificationCoin.Instance.ShowCoin(killHiderCoin,2);
+            if (killer.CompareTag("Player"))
+            {
+                CoinManager.Instance.AddCoin(killHiderCoin);
+                gameWinUI.AddMatchCoin(killHiderCoin);
+                NotificationCoin.Instance.ShowCoin(killHiderCoin, 2);
+            }
+
+            List<RoleComponent> currentHiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
+
+            // Hider cuối cùng bị hạ
+            if (currentHiders.Count <= 1 && currentHiders.Contains(victimRole))
+            {
+                if (victim.CompareTag("Player"))
+                {
+                    // ✅ KHÔNG SetRole ngay → giữ nguyên Hider state, camera không switch
+                    // Chờ anim chết xong rồi mới GameEnd
+                    StartCoroutine(DelayedGameEnd(deathAnimDelay));
+                }
+                else
+                {
+                    // Victim là Bot, Player đang là Seeker → set role rồi kết thúc ngay
+                    victimRole.SetRole(GameRole.Seeker);
+                    TransitionToState(GameState.GameEnd);
+                }
+                return;
+            }
+
+            // Vẫn còn Hider khác → respawn victim thành Seeker
+            StartCoroutine(RespawnAsSeeker(victim));
         }
+    }
+
+    // ================= DELAYED GAME END =================
+    // Dùng khi Player là Hider bị giết cuối cùng: chờ anim chết rồi mới load UI win
+    private IEnumerator DelayedGameEnd(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        TransitionToState(GameState.GameEnd);
+    }
+
+    // ================= RESPAWN + NAVMESH FIX =================
+    private IEnumerator RespawnAsSeeker(GameObject victim)
+    {
+        yield return new WaitForSeconds(timeRespawn);
+
+        if (victim == null) yield break;
+
+        if (currentState == GameState.GameEnd) yield break;
+
+        var role = victim.GetComponent<RoleComponent>();
+        var agent = victim.GetComponent<NavMeshAgent>();
+        var healthComp = victim.GetComponent<Health>();
+
+        if (role == null) yield break;
+        if (role.Role != GameRole.Hider) yield break;
+
+        Transform spawn = SpawnManager.Instance.GetRandomSpawnPoint();
+        if (spawn == null) yield break;
+
+        if (agent != null)
+            agent.enabled = false;
+
+        victim.transform.SetPositionAndRotation(spawn.position, spawn.rotation);
+
+        yield return null;
+
+        if (agent != null)
+        {
+            agent.enabled = true;
+
+            if (agent.isOnNavMesh)
+                agent.Warp(spawn.position);
+        }
+
+        if (!victim.activeSelf)
+            victim.SetActive(true);
+
+        role.SetRole(GameRole.Seeker);
+
+        if (healthComp != null)
+        {
+            healthComp.RespawnHealth();
+        }
+
+        CheckGameEnd();
     }
 
     // ================= GAME END =================
@@ -287,9 +414,35 @@ public class GameManager : MonoBehaviour
         if (hiderCoinCoroutine != null)
             StopCoroutine(hiderCoinCoroutine);
 
-        hiderPingUIManager.Clear();
+        HiderPingUIManager.Instance.Clear();
 
-        timePlayGameUI.Hide();
+        // Đóng băng Player
+        if (player != null)
+        {
+            var playerMovement = player.GetComponent<PlayerMovement>();
+            if (playerMovement != null)
+            {
+                playerMovement.SetFreeze(true);
+            }
+        }
+
+        // Đóng băng toàn bộ Bot AI
+        if (bots != null)
+        {
+            foreach (var bot in bots)
+            {
+                if (bot == null) continue;
+
+                var agent = bot.GetComponent<NavMeshAgent>();
+                if (agent != null && agent.gameObject.activeSelf && agent.isOnNavMesh)
+                {
+                    agent.isStopped = true;
+                    agent.velocity = Vector3.zero;
+                }
+            }
+        }
+
+        OnGameFinish?.Invoke();
         gameWinUI.Show();
     }
 
@@ -297,9 +450,7 @@ public class GameManager : MonoBehaviour
     {
         if (currentState != GameState.Playing) return;
 
-        int hiderCount = RoleManager.Instance.CountByRole(GameRole.Hider);
-
-        if (hiderCount <= 0)
+        if (RoleManager.Instance.CountByRole(GameRole.Hider) <= 0)
             TransitionToState(GameState.GameEnd);
     }
 }
