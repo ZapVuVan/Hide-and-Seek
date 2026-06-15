@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemId: Freeze_01
   itemName: Freeze
-  icon: {fileID: 21300000, guid: ccd3afd90462e444386ef4056bcb88b6, type: 3}
+  icon: {fileID: 21300000, guid: dd5eaf56a79406c46a83fcb4e6a81d5d, type: 3}
   itemType: 2
   rarity: 3
   price: 600

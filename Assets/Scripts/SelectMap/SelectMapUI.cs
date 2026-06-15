@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class MapSelectUI : MonoBehaviour
 {
@@ -18,7 +19,12 @@ public class MapSelectUI : MonoBehaviour
     [SerializeField] private Button buyButton;
     [SerializeField] private TMP_Text buyCostText;
 
+    [Header("Not Enough Coin Popup")]
+    [SerializeField] private GameObject notEnoughCoinPopup;
+    [SerializeField] private float popupDuration = 2f;
+
     private MapTriggerZone currentZone;
+    private Coroutine popupCoroutine;
 
     private void Awake()
     {
@@ -27,20 +33,20 @@ public class MapSelectUI : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
         Instance = this;
 
         if (panel != null)
             panel.SetActive(false);
+
+        if (notEnoughCoinPopup != null)
+            notEnoughCoinPopup.SetActive(false);
     }
 
     public void ShowJoinButton(MapTriggerZone zone)
     {
         currentZone = zone;
-
         if (panel != null)
             panel.SetActive(true);
-
         RefreshButtons();
     }
 
@@ -48,6 +54,16 @@ public class MapSelectUI : MonoBehaviour
     {
         if (panel != null)
             panel.SetActive(false);
+
+        // Tắt popup và cancel coroutine khi rời zone
+        if (popupCoroutine != null)
+        {
+            StopCoroutine(popupCoroutine);
+            popupCoroutine = null;
+        }
+
+        if (notEnoughCoinPopup != null)
+            notEnoughCoinPopup.SetActive(false);
 
         currentZone = null;
     }
@@ -58,68 +74,66 @@ public class MapSelectUI : MonoBehaviour
             return;
 
         bool locked = currentZone.IsLocked;
-
         joinButtonObj.SetActive(!locked);
         buyButtonObj.SetActive(locked);
 
-        if (locked)
-        {
-            buyCostText.text = $"🔒 {currentZone.UnlockCost}";
-        }
+        if (locked && buyCostText != null)
+            buyCostText.text = $"{currentZone.UnlockCost}";
     }
 
-    // Gắn vào Button Join
     public void OnClickJoin()
     {
         Debug.Log("JOIN BUTTON CLICKED");
-
-        if (currentZone == null)
-            return;
-
-        if (currentZone.IsLocked)
-            return;
+        if (currentZone == null) return;
+        if (currentZone.IsLocked) return;
 
         Debug.Log($"[MAP] Join {currentZone.SceneName}");
 
         if (MapLoadingScreen.Instance != null)
-        {
-            MapLoadingScreen.Instance.StartLoading(
-                currentZone.SceneName
-            );
-        }
+            MapLoadingScreen.Instance.StartLoading(currentZone.SceneName);
 
         panel.SetActive(false);
     }
 
-    // Gắn vào Button Buy
     public void OnClickBuy()
     {
-        if (currentZone == null)
-            return;
-
-        if (!currentZone.IsLocked)
-            return;
+        if (currentZone == null) return;
+        if (!currentZone.IsLocked) return;
 
         int playerCoin = CoinManager.Instance.coin;
 
         if (playerCoin < currentZone.UnlockCost)
         {
-            buyCostText.text = "Not Enough Coin!";
+            ShowNotEnoughCoinPopup();
             return;
         }
 
         CoinManager.Instance.SpendCoin(currentZone.UnlockCost);
-
         currentZone.IsLocked = false;
 
-        PlayerPrefs.SetInt(
-            $"Map_Unlocked_{currentZone.SceneName}",
-            1);
-
+        PlayerPrefs.SetInt($"Map_Unlocked_{currentZone.SceneName}", 1);
         PlayerPrefs.Save();
 
         Debug.Log($"[MAP] Unlock {currentZone.SceneName}");
-
         RefreshButtons();
     }
+
+    private void ShowNotEnoughCoinPopup()
+    {
+        if (notEnoughCoinPopup == null) return;
+
+        if (popupCoroutine != null)
+            StopCoroutine(popupCoroutine);
+
+        popupCoroutine = StartCoroutine(PopupCoroutine());
+    }
+
+    private IEnumerator PopupCoroutine()
+    {
+        notEnoughCoinPopup.SetActive(true);
+        yield return new WaitForSeconds(popupDuration);
+        notEnoughCoinPopup.SetActive(false);
+        popupCoroutine = null;
+    }
+
 }

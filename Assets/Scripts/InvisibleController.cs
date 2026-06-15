@@ -9,12 +9,19 @@ public class InvisibleController : MonoBehaviour
     [SerializeField] private float drainSpeed = 0.14f;
     [SerializeField] private float speedThreshold = 0.1f;
 
-    // 🔥 Event chỉ cần truyền đúng giá trị fillAmount hiện tại
-    public static event Action<float> OnInvisibleUpdated;
+    [Header("Seeker Proximity")]
+    [SerializeField] private float seekerDetectRadius = 5f;
+    [SerializeField] private float proximityTransitionSpeed = 2f;
+    private const float ProximityMaxFill = 0.9f;
+
+    // ✅ Truyền kèm instance để UI lọc đúng controller
+    public static event Action<InvisibleController, float> OnInvisibleUpdated;
 
     private RoleComponent _role;
     private List<Material> _materials = new();
     public float _fillAmount;
+    private bool _isDead = false;
+    private float _currentMaxFill = 1f;
 
     private void Awake()
     {
@@ -26,6 +33,19 @@ public class InvisibleController : MonoBehaviour
     private bool IsHider()
     {
         return _role != null && _role.Role == GameRole.Hider;
+    }
+
+    private bool IsSeekerNearby()
+    {
+        var allRoles = FindObjectsByType<RoleComponent>(FindObjectsSortMode.None);
+        foreach (var role in allRoles)
+        {
+            if (role == _role) continue;
+            if (role.Role != GameRole.Seeker) continue;
+            float dist = Vector3.Distance(transform.position, role.transform.position);
+            if (dist <= seekerDetectRadius) return true;
+        }
+        return false;
     }
 
     public void SetTransparentMode()
@@ -62,10 +82,15 @@ public class InvisibleController : MonoBehaviour
 
     public void UpdateInvisible(float speed)
     {
+        if (_isDead) return;
+
         if (!IsHider())
         {
-            // Nếu không phải Hider, ép thanh fill về 0
-            OnInvisibleUpdated?.Invoke(0f);
+            if (_fillAmount != 0f)
+            {
+                _fillAmount = 0f;
+                OnInvisibleUpdated?.Invoke(this, 0f);
+            }
             return;
         }
 
@@ -73,13 +98,26 @@ public class InvisibleController : MonoBehaviour
         float target = isStanding ? 1f : 0f;
         float rate = isStanding ? fillSpeed : drainSpeed;
 
-        _fillAmount = Mathf.MoveTowards(_fillAmount, target, rate * Time.deltaTime);
-        _fillAmount = Mathf.Clamp01(_fillAmount);
+        float newFill = Mathf.MoveTowards(_fillAmount, target, rate * Time.deltaTime);
+        newFill = Mathf.Clamp01(newFill);
 
-        ApplyFade();
+        // ✅ Chỉ clamp khi fill đã đạt gần 100% và Seeker đang gần
+        if (newFill >= 0.999f && IsSeekerNearby())
+        {
+            _currentMaxFill = Mathf.MoveTowards(_currentMaxFill, ProximityMaxFill, proximityTransitionSpeed * Time.deltaTime);
+            newFill = Mathf.Min(newFill, _currentMaxFill);
+        }
+        else
+        {
+            _currentMaxFill = 1f;
+        }
 
-        // 🔥 Bắn sự kiện cập nhật fill
-        OnInvisibleUpdated?.Invoke(_fillAmount);
+        if (!Mathf.Approximately(newFill, _fillAmount))
+        {
+            _fillAmount = newFill;
+            ApplyFade();
+            OnInvisibleUpdated?.Invoke(this, _fillAmount);
+        }
     }
 
     private void ApplyFade()
@@ -95,9 +133,20 @@ public class InvisibleController : MonoBehaviour
         }
     }
 
+    public void OnDead()
+    {
+        _isDead = true;
+        _fillAmount = 1f;
+        ApplyFade();
+        OnInvisibleUpdated?.Invoke(this, _fillAmount);
+    }
+
     public void ResetInvisible()
     {
+        _isDead = false;
         _fillAmount = 0f;
+        _currentMaxFill = 1f;
+
         foreach (var mat in _materials)
         {
             if (mat == null) continue;
@@ -107,6 +156,6 @@ public class InvisibleController : MonoBehaviour
             mat.SetFloat("_Cutoff", 0.001f);
         }
 
-        OnInvisibleUpdated?.Invoke(0f);
+        OnInvisibleUpdated?.Invoke(this, 0f);
     }
 }

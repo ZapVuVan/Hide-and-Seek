@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfeae6c198af9504ea3079dc8dbb4ffe, type: 3}
+  m_Name: Gun_Recluse
+  m_EditorClassIdentifier: 
+  itemId: Gun_Recluse
+  itemName: Recluse
+  icon: {fileID: 21300000, guid: bbb293ea5949d094f9273c6bf5d35005, type: 3}
+  itemType: 0
+  rarity: 4
+  price: 200
+  isDefault: 1
+  description: Recluse
+  damage: 10
+  magazineSize: 30
+  reloadTime: 2
+  fireRate: 8
+  isAutomatic: 1
+  weaponPrefab: {fileID: 5091361394720711656, guid: eadc4675d8abb7d4bba5538b76077c9b, type: 3}

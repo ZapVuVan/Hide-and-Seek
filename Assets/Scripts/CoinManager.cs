@@ -47,7 +47,7 @@ public class CoinManager : MonoBehaviour
 
     public void LoadCoin()
     {
-        coin = PlayerPrefs.GetInt(COIN_KEY, 0);
+        coin = PlayerPrefs.GetInt(COIN_KEY, 2000);
         OnCoinChanged?.Invoke(coin);
     }
 

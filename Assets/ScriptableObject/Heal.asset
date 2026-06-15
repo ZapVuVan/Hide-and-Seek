@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemId: Heal_01
   itemName: Heal
-  icon: {fileID: 21300000, guid: 791ae6cb9ed5b4301bb6925b78e26f45, type: 3}
+  icon: {fileID: 21300000, guid: 00637ffc33a6240e2bf967b019d64caf, type: 3}
   itemType: 2
   rarity: 0
   price: 300

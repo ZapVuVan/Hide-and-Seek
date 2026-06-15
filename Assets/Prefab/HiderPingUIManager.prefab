@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d55fef67e89306e4e9e4303a9d0dbaf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iconPrefab: {fileID: 3874768297596366549, guid: 437911f4a583ab5429502baa359a631e, type: 3}
+  iconPrefab: {fileID: 6567928191425652368, guid: c5272729e78443048a86db68a62db4d7, type: 3}
   canvas: {fileID: 8450710181055494252}
   mainCamera: {fileID: 0}
 --- !u!1 &4386700669531156911

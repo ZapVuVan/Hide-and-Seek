@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfeae6c198af9504ea3079dc8dbb4ffe, type: 3}
+  m_Name: Gun_Raven
+  m_EditorClassIdentifier: 
+  itemId: Gun_Raven
+  itemName: Raven
+  icon: {fileID: 21300000, guid: 08ce58603967f144a8fb7d862d2d92dd, type: 3}
+  itemType: 0
+  rarity: 2
+  price: 500
+  isDefault: 1
+  description: Raven
+  damage: 10
+  magazineSize: 30
+  reloadTime: 2
+  fireRate: 8
+  isAutomatic: 1
+  weaponPrefab: {fileID: 6918858221919550949, guid: 5a0f3324ad359fb4db7b15f4f0a36c05, type: 3}

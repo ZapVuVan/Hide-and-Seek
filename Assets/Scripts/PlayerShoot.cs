@@ -3,8 +3,14 @@
 public class PlayerShoot : MonoBehaviour
 {
     [SerializeField] private Transform firePoint;
-    [SerializeField] private string bulletTag = "Bullet";
     [SerializeField] private Camera cam;
+    [SerializeField] private LayerMask hitMask;
+
+    [Header("Hitscan VFX")]
+    [SerializeField] private GameObject impactParticlePrefab;
+
+    [Header("Muzzle Flash")]
+    [SerializeField] private ParticleSystem muzzleFlash;
 
     private RoleComponent roleComponent;
 
@@ -15,32 +21,37 @@ public class PlayerShoot : MonoBehaviour
 
     public void Shoot()
     {
-        // 1. Ray từ tâm màn hình
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.transform.position = firePoint.position;
+            muzzleFlash.transform.rotation = firePoint.rotation;
+            muzzleFlash.Play();
+        }
+
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
-        Vector3 targetPoint;
-        if (Physics.Raycast(ray, out RaycastHit hit))
+        if (Physics.Raycast(ray, out RaycastHit hit, 300f, hitMask))
         {
-            targetPoint = hit.point;
-        }
-        else
-        {
-            targetPoint = ray.GetPoint(100f);
-        }
+            if (impactParticlePrefab != null)
+            {
+                GameObject impact = Instantiate(
+                    impactParticlePrefab,
+                    hit.point,
+                    Quaternion.LookRotation(hit.normal)
+                );
+                Destroy(impact, 2f);
+            }
 
-        // 2. Hướng bay từ đầu súng → target
-        Vector3 direction = (targetPoint - firePoint.position).normalized;
+            // Seeker không damage Seeker
+            if (hit.collider.TryGetComponent<RoleComponent>(out var targetRole))
+            {
+                if (roleComponent.Role == GameRole.Seeker &&
+                    targetRole.Role == GameRole.Seeker)
+                    return;
+            }
 
-        // 3. Spawn bullet
-        GameObject obj = GameObjectPool.Instance.Get(
-            bulletTag,
-            firePoint.position,
-            Quaternion.LookRotation(direction) // 👈 QUAN TRỌNG
-        );
-
-        if (obj != null && obj.TryGetComponent<Bullet>(out var bullet))
-        {
-            bullet.Init(bulletTag, targetPoint, roleComponent.Role, gameObject);
+            if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
+                damageable.TakeDamage(10, gameObject);
         }
     }
 }

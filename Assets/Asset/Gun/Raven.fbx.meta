@@ -1,0 +1,274 @@
+fileFormatVersion: 2
+guid: f575ca237dec7d142a6f5121c230164d
+ModelImporter:
+  serializedVersion: 22200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Barreldetail1Mtl.001
+    second: {fileID: 2100000, guid: a50325d244682b547877608339879e97, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Bolt1Mtl.001
+    second: {fileID: 2100000, guid: e48414e48fb424849950ada57d2f88ec, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Detail1Mtl.001
+    second: {fileID: 2100000, guid: a10e46cc2a25a004dba10adde436d587, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DrumMag1001Mtl.001
+    second: {fileID: 2100000, guid: 6c858615dc69f5c49a1af4be57845388, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: FabDefenseGlcoreButtstock1Mtl.001
+    second: {fileID: 2100000, guid: 16e7a70e0c202544e817e18b4e0cfe6f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GralsGrip1Mtl.001
+    second: {fileID: 2100000, guid: 673f9929a5cd8b643bc0c45a15e6cf5d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Grip1Mtl.001
+    second: {fileID: 2100000, guid: 6b13ed670bb5e304fad5a02b573656ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Magazine1Mtl.001
+    second: {fileID: 2100000, guid: 78008c75408b8d349a10e7c3849df98a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart10Mtl.001
+    second: {fileID: 2100000, guid: 460df4661da1d744c8a17edbd94dd9f4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart1Mtl.001
+    second: {fileID: 2100000, guid: 8f019dad93735074d98bf4f5a89b98ac, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart2Mtl.001
+    second: {fileID: 2100000, guid: f3b3225692dc8044fa8b02a1e5d6a314, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart3Mtl.001
+    second: {fileID: 2100000, guid: 940145b2bdbc248428c4d5e108f44012, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart5Mtl.001
+    second: {fileID: 2100000, guid: 94568f2208d475e4a89a890679ebe17c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Meshpart7Mtl.001
+    second: {fileID: 2100000, guid: d25eb750a36246241a6ee187fcc4d8ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Part1Mtl.001
+    second: {fileID: 2100000, guid: 1d9ca8d2058d82342a2126efd321aabb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Part2Mtl.001
+    second: {fileID: 2100000, guid: 9fff19d87cc6f8d4bb72678408d00584, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Part3Mtl.001
+    second: {fileID: 2100000, guid: 3930fd93653f35f4bbe35bafc96055b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: S1Mtl.001
+    second: {fileID: 2100000, guid: dbef85fc097ba6748b7356d36ae909ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: S5Mtl.001
+    second: {fileID: 2100000, guid: 8a9622d0fef56e74eabb495b9c24b2c8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SilencercoOsprey99x19SoundSuppressor1Mtl.001
+    second: {fileID: 2100000, guid: 3c10cceb1445529458b124eabc15a53c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SilencercoOsprey99x19SoundSuppressor2Mtl.001
+    second: {fileID: 2100000, guid: 509404a6b203e4745b2fa3c3f41e3500, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Silenciador1Mtl.001
+    second: {fileID: 2100000, guid: 63a7a5e48fdf7954e987fc84ffdc1f87, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Slide1Mtl.001
+    second: {fileID: 2100000, guid: ec523af9006406649a3c1ef2fca2297a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SmoothBlockModel1Mtl.001
+    second: {fileID: 2100000, guid: 2147858373320f745a0b225330f8c0c0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: StrikeIndustriesAdvancedReceiverExtensionBufferTube1Mtl.001
+    second: {fileID: 2100000, guid: d69abdddc5957f347946dee8450f68b5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Underbarrelmount1Mtl.001
+    second: {fileID: 2100000, guid: 6bf645de3efc49d4fb3b80129c09bfc8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Window1Mtl.001
+    second: {fileID: 2100000, guid: 907ef3b2711aeea46a1a034a576f57dc, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: DrumMag1001_diff
+    second: {fileID: 2800000, guid: 4be2535b6f5f54346a997fdf1d49c74f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Magazine1_diff
+    second: {fileID: 2800000, guid: f21de8e11a047d3458c73183d00f89f1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Meshpart7_diff
+    second: {fileID: 2800000, guid: acea475497847a042aab28e685c0f0f7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Part1_diff
+    second: {fileID: 2800000, guid: 357bae9ee2563994eb4f75c2e301996b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Part3_diff
+    second: {fileID: 2800000, guid: 90c2b0d3bf7202d4fb5f5415bd49fabf, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: StrikeIndustriesAdvancedReceiverExtensionBufferTube1_diff
+    second: {fileID: 2800000, guid: 241e69cad1073404888707ff8a718112, type: 3}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 1
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

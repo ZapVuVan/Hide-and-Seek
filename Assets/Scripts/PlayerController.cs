@@ -126,6 +126,7 @@ public class PlayerController : MonoBehaviour, IRole, IFreezable
                 shopButton?.SetActive(false);
                 hiderControlUI.SetActive(false);
                 seekerControlUI.SetActive(true);
+                Debug.Log("Transitioning to Seeker State");
                 TransitionToState(seekerState);
                 LoadEquippedWeapon();
                 break;

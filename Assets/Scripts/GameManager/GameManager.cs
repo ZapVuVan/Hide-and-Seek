@@ -1,4 +1,5 @@
-﻿using System;
+﻿// ==================== GameManager.cs ====================
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -31,7 +32,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Respawn Setting")]
     [SerializeField] private float timeRespawn = 5f;
-    [SerializeField] private float deathAnimDelay = 2f; // Delay chờ anim chết của Player
+    [SerializeField] private float deathAnimDelay = 2f;
 
     private GameState currentState;
     public GameState CurrentState => currentState;
@@ -41,6 +42,8 @@ public class GameManager : MonoBehaviour
     private Coroutine hiderCoinCoroutine;
 
     private Health[] allHealth;
+
+    private GameRole winnerRole; // ← THÊM MỚI
 
     // ================= EVENTS =================
     public event Action<float, bool> OnHidingPhaseStart;
@@ -106,26 +109,25 @@ public class GameManager : MonoBehaviour
             yield break;
         }
 
-        // --- FIX FOR PLAYER ---
         if (player != null)
         {
             Transform playerSpawn = SpawnManager.Instance.GetRandomSpawnPoint();
             if (playerSpawn != null)
             {
-                var cc = player.GetComponent<CharacterController>();
-                var rb = player.GetComponent<Rigidbody>();
+                var cc    = player.GetComponent<CharacterController>();
+                var rb    = player.GetComponent<Rigidbody>();
                 var agent = player.GetComponent<NavMeshAgent>();
 
-                if (cc != null) cc.enabled = false;
+                if (cc != null)    cc.enabled = false;
                 if (agent != null) agent.enabled = false;
-                if (rb != null) rb.isKinematic = true;
+                if (rb != null)    rb.isKinematic = true;
 
                 player.transform.SetPositionAndRotation(playerSpawn.position, playerSpawn.rotation);
 
                 yield return null;
 
-                if (cc != null) cc.enabled = true;
-                if (rb != null) rb.isKinematic = false;
+                if (cc != null)    cc.enabled = true;
+                if (rb != null)    rb.isKinematic = false;
                 if (agent != null)
                 {
                     agent.enabled = true;
@@ -134,7 +136,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // --- FIX FOR BOTS ---
         foreach (var bot in bots)
         {
             if (bot == null) continue;
@@ -226,8 +227,8 @@ public class GameManager : MonoBehaviour
     {
         playerActionUI?.SetActive(true);
         playingTimerCoroutine = StartCoroutine(PlayingTimerCoroutine());
-        pingCoroutine = StartCoroutine(PingUI());
-        hiderCoinCoroutine = StartCoroutine(HiderSurviveCoin());
+        pingCoroutine         = StartCoroutine(PingUI());
+        hiderCoinCoroutine    = StartCoroutine(HiderSurviveCoin());
     }
 
     private IEnumerator PlayingTimerCoroutine()
@@ -243,6 +244,7 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
+        winnerRole = GameRole.Hider; // ← hết giờ, Hider thắng
         TransitionToState(GameState.GameEnd);
     }
 
@@ -262,7 +264,7 @@ public class GameManager : MonoBehaviour
             if (role.Role != GameRole.Hider) yield break;
 
             CoinManager.Instance.AddCoin(surviveCoin);
-            gameWinUI.AddMatchCoin(surviveCoin); // ✅ Sửa: dùng surviveCoin thay vì killHiderCoin
+            gameWinUI.AddMatchCoin(surviveCoin);
             NotificationCoin.Instance.ShowCoin(surviveCoin, 1);
         }
     }
@@ -279,7 +281,7 @@ public class GameManager : MonoBehaviour
                 if (currentState != GameState.Playing) yield break;
 
                 t += Time.deltaTime;
-                OnPingCooldownUpdate?.Invoke(1f - (t / pingInterval));
+                OnPingCooldownUpdate?.Invoke((t / pingInterval));
                 yield return null;
             }
 
@@ -322,49 +324,44 @@ public class GameManager : MonoBehaviour
 
             List<RoleComponent> currentHiders = RoleManager.Instance.GetAllByRole(GameRole.Hider);
 
-            // Hider cuối cùng bị hạ
             if (currentHiders.Count <= 1 && currentHiders.Contains(victimRole))
             {
                 if (victim.CompareTag("Player"))
                 {
-                    // ✅ KHÔNG SetRole ngay → giữ nguyên Hider state, camera không switch
-                    // Chờ anim chết xong rồi mới GameEnd
+                    winnerRole = GameRole.Seeker; // ← THÊM MỚI
                     StartCoroutine(DelayedGameEnd(deathAnimDelay));
                 }
                 else
                 {
-                    // Victim là Bot, Player đang là Seeker → set role rồi kết thúc ngay
+                    winnerRole = GameRole.Seeker; // ← THÊM MỚI
                     victimRole.SetRole(GameRole.Seeker);
                     TransitionToState(GameState.GameEnd);
                 }
                 return;
             }
 
-            // Vẫn còn Hider khác → respawn victim thành Seeker
             StartCoroutine(RespawnAsSeeker(victim));
         }
     }
 
     // ================= DELAYED GAME END =================
-    // Dùng khi Player là Hider bị giết cuối cùng: chờ anim chết rồi mới load UI win
     private IEnumerator DelayedGameEnd(float delay)
     {
         yield return new WaitForSeconds(delay);
         TransitionToState(GameState.GameEnd);
     }
 
-    // ================= RESPAWN + NAVMESH FIX =================
+    // ================= RESPAWN =================
     private IEnumerator RespawnAsSeeker(GameObject victim)
     {
         yield return new WaitForSeconds(timeRespawn);
 
         if (victim == null) yield break;
-
         if (currentState == GameState.GameEnd) yield break;
 
-        var role = victim.GetComponent<RoleComponent>();
-        var agent = victim.GetComponent<NavMeshAgent>();
-        var healthComp = victim.GetComponent<Health>();
+        var role        = victim.GetComponent<RoleComponent>();
+        var agent       = victim.GetComponent<NavMeshAgent>();
+        var healthComp  = victim.GetComponent<Health>();
 
         if (role == null) yield break;
         if (role.Role != GameRole.Hider) yield break;
@@ -382,9 +379,7 @@ public class GameManager : MonoBehaviour
         if (agent != null)
         {
             agent.enabled = true;
-
-            if (agent.isOnNavMesh)
-                agent.Warp(spawn.position);
+            if (agent.isOnNavMesh) agent.Warp(spawn.position);
         }
 
         if (!victim.activeSelf)
@@ -393,9 +388,7 @@ public class GameManager : MonoBehaviour
         role.SetRole(GameRole.Seeker);
 
         if (healthComp != null)
-        {
             healthComp.RespawnHealth();
-        }
 
         CheckGameEnd();
     }
@@ -405,28 +398,19 @@ public class GameManager : MonoBehaviour
     {
         playerActionUI.SetActive(false);
 
-        if (playingTimerCoroutine != null)
-            StopCoroutine(playingTimerCoroutine);
-
-        if (pingCoroutine != null)
-            StopCoroutine(pingCoroutine);
-
-        if (hiderCoinCoroutine != null)
-            StopCoroutine(hiderCoinCoroutine);
+        if (playingTimerCoroutine != null) StopCoroutine(playingTimerCoroutine);
+        if (pingCoroutine != null)         StopCoroutine(pingCoroutine);
+        if (hiderCoinCoroutine != null)    StopCoroutine(hiderCoinCoroutine);
 
         HiderPingUIManager.Instance.Clear();
 
-        // Đóng băng Player
         if (player != null)
         {
             var playerMovement = player.GetComponent<PlayerMovement>();
             if (playerMovement != null)
-            {
                 playerMovement.SetFreeze(true);
-            }
         }
 
-        // Đóng băng toàn bộ Bot AI
         if (bots != null)
         {
             foreach (var bot in bots)
@@ -437,13 +421,13 @@ public class GameManager : MonoBehaviour
                 if (agent != null && agent.gameObject.activeSelf && agent.isOnNavMesh)
                 {
                     agent.isStopped = true;
-                    agent.velocity = Vector3.zero;
+                    agent.velocity  = Vector3.zero;
                 }
             }
         }
 
         OnGameFinish?.Invoke();
-        gameWinUI.Show();
+        gameWinUI.Show(winnerRole); // ← SỬA: truyền winnerRole
     }
 
     public void CheckGameEnd()
