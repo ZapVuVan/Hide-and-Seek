@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using YourGame.Debugging;
 
 public class GameManager : MonoBehaviour
 {
@@ -185,11 +186,20 @@ public class GameManager : MonoBehaviour
     // ================= ROLE =================
     private IEnumerator AssigningRolesCoroutine()
     {
-        playerActionUI.SetActive(false);
+        if (DebugCheatManager.Instance != null)
+            yield return new WaitUntil(() => DebugCheatManager.Instance.HasChosenRole);
 
         yield return new WaitForSeconds(roleAssignDelay);
 
-        GameRole playerRole = RoleManager.Instance.GenerateRoles(player, bots);
+        GameRole? forcedRole = null;
+        if (DebugCheatManager.Instance != null && DebugCheatManager.Instance.ForcedRole != DebugRole.None)
+        {
+            forcedRole = DebugCheatManager.Instance.ForcedRole == DebugRole.Hider
+                ? GameRole.Hider
+                : GameRole.Seeker;
+        }
+
+        GameRole playerRole = RoleManager.Instance.GenerateRoles(player, bots, forcedRole);
 
         if (roleRevealUI != null)
             yield return roleRevealUI.PlayReveal(playerRole);
@@ -199,12 +209,9 @@ public class GameManager : MonoBehaviour
         if (player != null)
         {
             var playerRoleComp = player.GetComponent<RoleComponent>();
-
-            bool isHider =
-                playerRoleComp != null &&
-                playerRoleComp.Role == GameRole.Hider;
-
+            bool isHider = playerRoleComp != null && playerRoleComp.Role == GameRole.Hider;
             playerActionUI.SetActive(isHider);
+            // ... phan con lai giu nguyen
         }
 
         TransitionToState(GameState.HidingPhase);
@@ -263,8 +270,8 @@ public class GameManager : MonoBehaviour
             if (currentState != GameState.Playing) yield break;
             if (role.Role != GameRole.Hider) yield break;
 
-            CoinManager.Instance.AddCoin(surviveCoin);
             gameWinUI.AddMatchCoin(surviveCoin);
+            MatchCoinUI.Instance.AddCoin(surviveCoin);
             NotificationCoin.Instance.ShowCoin(surviveCoin, 1);
         }
     }
@@ -317,7 +324,7 @@ public class GameManager : MonoBehaviour
         {
             if (killer.CompareTag("Player"))
             {
-                CoinManager.Instance.AddCoin(killHiderCoin);
+                MatchCoinUI.Instance.AddCoin(killHiderCoin);
                 gameWinUI.AddMatchCoin(killHiderCoin);
                 NotificationCoin.Instance.ShowCoin(killHiderCoin, 2);
             }

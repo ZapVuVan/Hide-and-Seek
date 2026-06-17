@@ -68,14 +68,18 @@ public class InventoryManager : MonoBehaviour
         PlayerPrefs.SetString(key, itemId);
         PlayerPrefs.Save();
 
-        // Swap weapon model nếu là Gun
-        if (item is GunData gunData)
-        {
-            WeaponHolder.Instance?.EquipWeapon(gunData);
-            Debug.Log($"[Equip] Đã equip: {itemId}");
-        }
+        // ✅ Bỏ WeaponHolder, chỉ fire event — WeaponVisual tự lắng nghe
+        OnInventoryChanged?.Invoke();
+
+        Debug.Log($"[Equip] Đã equip: {itemId}");
     }
 
+    public GunData GetEquippedGun()
+    {
+        string gunId = GetEquipped(ItemType.Gun);
+        if (string.IsNullOrEmpty(gunId)) return null;
+        return database.GetById(gunId) as GunData;
+    }
     public int GetCharges(string itemId)
         => PlayerPrefs.GetInt(CHARGES_KEY + itemId, 0);
 

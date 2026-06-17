@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour, IRole, IFreezable
                 hiderControlUI.SetActive(true);
                 seekerControlUI.SetActive(false);
                 TransitionToState(hiderState);
-                WeaponHolder.Instance?.ClearWeapon();
+                //WeaponHolder.Instance?.ClearWeapon();
                 break;
 
             case GameRole.Seeker:
@@ -134,7 +134,7 @@ public class PlayerController : MonoBehaviour, IRole, IFreezable
             default:
                 shopButton?.SetActive(true);
                 TransitionToState(normalState);
-                WeaponHolder.Instance?.ClearWeapon();
+                //WeaponHolder.Instance?.ClearWeapon();
                 break;
         }
     }
@@ -147,8 +147,8 @@ public class PlayerController : MonoBehaviour, IRole, IFreezable
         if (string.IsNullOrEmpty(equippedId)) return;
 
         var item = InventoryManager.Instance.database.GetById(equippedId);
-        if (item is GunData gunData)
-            WeaponHolder.Instance?.EquipWeapon(gunData);
+        //if (item is GunData gunData)
+            //WeaponHolder.Instance?.EquipWeapon(gunData);
     }
 
     public IPlayerState GetState() => currentState;

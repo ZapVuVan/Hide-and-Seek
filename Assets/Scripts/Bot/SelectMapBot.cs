@@ -30,16 +30,12 @@ public class SelectMapBot : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
 
-        Debug.Log("Agent: " + agent);
-        Debug.Log("Animator: " + animator);
-        Debug.Log("Agent on NavMesh: " + agent.isOnNavMesh);
-
         if (botType == BotType.Random)
             botType = Random.value < 0.5f
                 ? BotType.Wandering
                 : BotType.MapSelector;
 
-        Debug.Log("BotType: " + botType);
+
         StartCoroutine(BotRoutine());
     }
 
@@ -61,9 +57,7 @@ public class SelectMapBot : MonoBehaviour
             Vector3 target = GetRandomNavMeshPoint(transform.position, wanderRadius);
             agent.SetDestination(target);
 
-            Debug.Log("Before SetWalkAnim True");
             SetWalkAnim(true);
-            Debug.Log("After SetWalkAnim True");
 
             yield return new WaitUntil(() => HasReached());
 
@@ -186,11 +180,9 @@ public class SelectMapBot : MonoBehaviour
         if (animator != null)
         {
             animator.SetBool("isRunning", isWalking);
-            Debug.Log("Đang set anim: " + isWalking); // Xem trong Console có log ra không
         }
         else
         {
-            Debug.LogError("Animator chưa được gán hoặc bị null!");
         }
     }
 }

@@ -9,52 +9,42 @@ public class TouchCameraController : MonoBehaviour, IDragHandler
 
     [Header("Sensitivity")]
     [SerializeField] private float sensitivityX = 0.2f;
-    [SerializeField] private float sensitivityY = 0.15f; // Dọc thấp hơn ngang
+    [SerializeField] private float sensitivityY = 0.15f;
 
     [Header("Vertical Clamp")]
     [SerializeField] private float minY = -70f;
     [SerializeField] private float maxY = 70f;
 
-    [Header("Max Delta Per Frame")]
-    [SerializeField] private float maxDeltaX = 15f;
-    [SerializeField] private float maxDeltaY = 8f; // Chặn vẩy tay mạnh theo chiều dọc
-
     [Header("Dead Zone")]
-    [SerializeField] private float deadZone = 2f; // pixel, tránh jitter
-
-    [Header("Smoothing")]
-    [SerializeField] private float smoothTime = 0.05f;
+    [SerializeField] private float deadZone = 1f;
 
     private float rotX;
     private float rotY;
+
     private bool isFirstCam = false;
 
-    private Vector2 currentVelocity;
-    private Vector2 targetDelta;
+    private void Start()
+    {
+        SyncRotation();
+    }
 
     public void OnDrag(PointerEventData eventData)
     {
-        // Clamp delta tối đa mỗi frame, chống vẩy aim đột ngột
-        float deltaX = Mathf.Clamp(eventData.delta.x, -maxDeltaX, maxDeltaX);
-        float deltaY = Mathf.Clamp(eventData.delta.y, -maxDeltaY, maxDeltaY);
+        float deltaX = eventData.delta.x;
+        float deltaY = eventData.delta.y;
 
-        // Dead zone: bỏ qua delta quá nhỏ (tránh jitter)
-        if (Mathf.Abs(deltaX) < deadZone) deltaX = 0f;
-        if (Mathf.Abs(deltaY) < deadZone) deltaY = 0f;
+        // Bỏ qua rung nhẹ
+        if (Mathf.Abs(deltaX) < deadZone)
+            deltaX = 0f;
 
-        float mouseX = (deltaX / Screen.width) * sensitivityX * 100f;
-        float mouseY = (deltaY / Screen.height) * sensitivityY * 100f;
+        if (Mathf.Abs(deltaY) < deadZone)
+            deltaY = 0f;
 
-        // Smooth delta để tránh spike đột ngột
-        targetDelta = Vector2.SmoothDamp(
-            targetDelta,
-            new Vector2(mouseX, mouseY),
-            ref currentVelocity,
-            smoothTime
-        );
+        // FPS mobile: dùng trực tiếp delta
+        rotY += deltaX * sensitivityX;
 
-        rotY += targetDelta.x;
-        rotX -= targetDelta.y;
+        // Dọc thấp hơn ngang để tránh vẩy lên trời
+        rotX -= deltaY * sensitivityY;
         rotX = Mathf.Clamp(rotX, minY, maxY);
 
         orientation.rotation = Quaternion.Euler(rotX, rotY, 0f);
@@ -63,20 +53,33 @@ public class TouchCameraController : MonoBehaviour, IDragHandler
     public void TransitionToFirstPerson()
     {
         isFirstCam = true;
+
         if (headPlayer != null)
             headPlayer.transform.localScale = Vector3.zero;
 
-        rotX = orientation.eulerAngles.x;
-        rotY = orientation.eulerAngles.y;
+        SyncRotation();
     }
 
     public void TransitionToThirdPerson()
     {
         isFirstCam = false;
+
         if (headPlayer != null)
             headPlayer.transform.localScale = Vector3.one;
 
-        rotX = orientation.eulerAngles.x;
-        rotY = orientation.eulerAngles.y;
+        SyncRotation();
+    }
+
+    private void SyncRotation()
+    {
+        Vector3 angles = orientation.eulerAngles;
+
+        rotY = angles.y;
+
+        rotX = angles.x;
+
+        // Chuyển từ 0~360 sang -180~180
+        if (rotX > 180f)
+            rotX -= 360f;
     }
 }

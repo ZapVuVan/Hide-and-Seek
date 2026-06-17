@@ -45,50 +45,51 @@
             OnRolesChanged?.Invoke();
         }
 
-    public GameRole GenerateRoles(PlayerController player, List<BotController> bots)
+    public GameRole GenerateRoles(PlayerController player, List<BotController> bots, GameRole? forcedPlayerRole = null)
     {
-        Debug.Log("===== GENERATE ROLES CALLED =====");
-        Debug.Log($"ALL ROLES COUNT = {allRoles.Count}");
-
-        foreach (var r in allRoles)
-        {
-            if (r == null)
-            {
-                Debug.Log("NULL ROLE");
-                continue;
-            }
-
-            Debug.Log(
-                $"RoleObject={r.name} | " +
-                $"Active={r.gameObject.activeInHierarchy} | " +
-                $"Role={r.Role}"
-            );
-        }
         pendingRoles.Clear();
-
         List<RoleComponent> all = new();
-
-        var playerRole = player.GetComponent<RoleComponent>();
-        all.Add(playerRole);
-
+        var playerRoleComp = player.GetComponent<RoleComponent>();
+        all.Add(playerRoleComp);
         foreach (var bot in bots)
             all.Add(bot.GetComponent<RoleComponent>());
 
-        int seekerIndex = Random.Range(0, all.Count);
+        GameRole playerFinalRole;
+        bool hasForcedRole = forcedPlayerRole.HasValue && forcedPlayerRole.Value != GameRole.None;
 
-        GameRole playerFinalRole = GameRole.None;
-
-        for (int i = 0; i < all.Count; i++)
+        if (hasForcedRole)
         {
-            GameRole role =
-                (i == seekerIndex)
-                ? GameRole.Seeker
-                : GameRole.Hider;
+            playerFinalRole = forcedPlayerRole.Value;
+            pendingRoles.Add(playerRoleComp, playerFinalRole);
 
-            pendingRoles.Add(all[i], role);
+            var others = all.Where(r => r != playerRoleComp).ToList();
 
-            if (all[i] == playerRole)
-                playerFinalRole = role;
+            if (playerFinalRole == GameRole.Seeker)
+            {
+                // Player la Seeker, tat ca con lai la Hider
+                foreach (var r in others)
+                    pendingRoles.Add(r, GameRole.Hider);
+            }
+            else
+            {
+                // Player la Hider, van random 1 bot trong so con lai lam Seeker
+                int seekerIndex = others.Count > 0 ? Random.Range(0, others.Count) : -1;
+                for (int i = 0; i < others.Count; i++)
+                    pendingRoles.Add(others[i], i == seekerIndex ? GameRole.Seeker : GameRole.Hider);
+            }
+        }
+        else
+        {
+            // Logic random binh thuong nhu cu, khong doi gi
+            int seekerIndex = Random.Range(0, all.Count);
+            playerFinalRole = GameRole.None;
+            for (int i = 0; i < all.Count; i++)
+            {
+                GameRole role = (i == seekerIndex) ? GameRole.Seeker : GameRole.Hider;
+                pendingRoles.Add(all[i], role);
+                if (all[i] == playerRoleComp)
+                    playerFinalRole = role;
+            }
         }
 
         return playerFinalRole;
